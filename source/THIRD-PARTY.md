@@ -1,6 +1,6 @@
 # Third-party components
 
-USB Bridge 0.11.0, October 2026. Upstream copyright notices and full licenses are retained in `licenses/` and in the vendored source directories.
+USB Bridge 0.15.5, November 2026. Upstream copyright notices and full licenses are retained in `licenses/` and in the vendored source directories.
 
 | Component | Version / commit | License / upstream |
 |---|---|---|
@@ -24,4 +24,17 @@ The rootless tethering approach was researched using Android framework APIs and 
 
 The Android APK uses the local Android debug signing certificate. The separate official Shizuku APK retains its original signature. SHA256SUMS files identify the exact distributed artifacts.
 
-The optional WireRoute 3.1.4 APK uses the official WireGuard Android tunnel library 1.0.20260102 and AndroidX. Its full component notices are in licenses/WireRoute-NOTICES.md and the accompanying source/wireroute-next/THIRD_PARTY_NOTICES.md. The WireRoute APK retains the original WireRoute 3.0.0 signing identity. Private keys, saved VPN profiles and settings are not distributed.
+The optional WireRoute 3.1.9 APK uses the official WireGuard Android tunnel library 1.0.20260102 and AndroidX. Its full component notices are in licenses/WireRoute-NOTICES.md and the accompanying source/wireroute-next/THIRD_PARTY_NOTICES.md. The WireRoute APK retains the original WireRoute 3.0.0 signing identity. Private keys, saved VPN profiles and settings are not distributed.
+
+WireRoute 3.1.9 rebuilds the pinned WireGuard native wrapper with a local packet-descriptor adapter. Cryptographic code is unchanged. See licenses/WireRoute-NOTICES.md.
+
+Portable ADB: unmodified adb.exe, AdbWinApi.dll and AdbWinUsbApi.dll from Google
+Platform-tools28.0.1. Full upstream NOTICE.txt is retained alongside the files.
+Official archive: https://dl.google.com/android/repository/platform-tools_r28.0.1-windows.zip
+Archive SHA256: db78f726d5dc653706dcd15a462ab1b946c643f598df76906c4c1858411c54df
+Selected for legacy Windows compatibility without the UCRT dependency introduced
+in platform-tools28.0.2. The bundle does not install drivers or change Windows
+security settings. It uses a separate local ADB server endpoint. Existing ADB
+installations are preferred on all Windows versions; their files are never replaced.
+
+USB Bridge helper154 is a modified source-built Shizuku compatibility server, not an official Shizuku release. The installed official manager APK remains unchanged. The optional WRITE_SECURE_SETTINGS grant catches SecurityException so manager attachment can continue; no permission is granted or bypassed by the patch. Upstream source commits, patch and Apache-2.0 licenses are in licenses/helper154/. Runtime files are Windows/helper/server.jar and start-helper154.sh.
