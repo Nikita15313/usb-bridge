@@ -1,6 +1,6 @@
 # Modified Shizuku compatibility payload
 
-This is USB Bridge's source-built helper payload157, not an official Shizuku release. The installed official Shizuku manager APK remains unchanged. Upstream source locations, exact commits and archive SHA256 values are in [UPSTREAM.json](UPSTREAM.json). Both projects use Apache2.0; their licenses are included here.
+This is USB Bridge's source-built helper payload157, not an official Shizuku release. The installed official Shizuku manager APK remains unchanged. Upstream source locations, exact commits and archive SHA256 values are in [UPSTREAM.json](UPSTREAM.json). Shizuku uses Apache2.0 and Shizuku-API uses MIT; both licenses are included here.
 
 Only `server/src/main/java/rikka/shizuku/server/ShizukuService.java` has runtime changes. [combined-runtime.patch](combined-runtime.patch) applies against the pinned Shizuku source and contains both changes:
 

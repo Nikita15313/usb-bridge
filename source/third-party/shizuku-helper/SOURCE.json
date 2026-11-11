@@ -1,6 +1,6 @@
 {
   "name": "USB Bridge Shizuku compatibility payload157",
-  "license": "Apache-2.0",
+  "license": "Apache-2.0 AND MIT",
   "modified": true,
   "officialShizukuRelease": false,
   "runtimeChangedFiles": [
