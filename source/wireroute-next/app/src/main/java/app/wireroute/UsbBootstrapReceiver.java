@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.VpnService;
 
-/** Restores the already-authorized plain USB path without opening an Activity. */
+/** Adopts the selected USB path while preserving the user's VPN on/off choice. */
 public final class UsbBootstrapReceiver extends BroadcastReceiver {
     public static final String ACTION = "local.usbbridge.START_PLAIN";
 
@@ -18,6 +18,7 @@ public final class UsbBootstrapReceiver extends BroadcastReceiver {
         if (!matchesSession(requested, offered)) return;
         TunnelController controller = ((WireRouteApplication) context.getApplicationContext())
                 .getTunnelController();
+        if (controller.handoverSystemToUsb(offered)) return;
         if (!controller.canStartPlainUsb()) return;
         if (VpnService.prepare(context) != null) {
             UsbBridgeUnderlay.reportSession(context, "plain_permission", offered, "plain");

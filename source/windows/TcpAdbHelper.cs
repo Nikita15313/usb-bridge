@@ -57,7 +57,7 @@ internal sealed class TcpAdbForwarder:IDisposable {
  internal static Socket ConnectBound(TcpAdbCableTarget target,HelperSessionAlive alive){
   if(target==null||target.Index<=0||!alive()||!target.InterfaceCurrent())throw new IOException("USB-подключение изменилось.");Socket socket=new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp);
   try{socket.SetSocketOption(SocketOptionLevel.IP,(SocketOptionName)31,IPAddress.HostToNetworkOrder(target.Index));socket.Bind(new IPEndPoint(target.Source,0));socket.NoDelay=true;
-   IAsyncResult operation=socket.BeginConnect(new IPEndPoint(target.Peer,5555),null,null);Stopwatch timeout=Stopwatch.StartNew();using(WaitHandle wait=operation.AsyncWaitHandle){while(!wait.WaitOne(50,false)){if(!alive()||timeout.ElapsedMilliseconds>=3000)throw new IOException("Телефон не отвечает в режиме рабочего ПК. Сначала подготовьте его дома; после перезагрузки подготовка может понадобиться снова.");}socket.EndConnect(operation);}
+   IAsyncResult operation=socket.BeginConnect(new IPEndPoint(target.Peer,5555),null,null);Stopwatch timeout=Stopwatch.StartNew();using(WaitHandle wait=operation.AsyncWaitHandle){while(!wait.WaitOne(50,false)){if(!alive()||timeout.ElapsedMilliseconds>=3000)throw new IOException("Служебный доступ телефона не отвечает. На ПК с работающей USB-отладкой откройте «Подключение» → «Служебный доступ».");}socket.EndConnect(operation);}
    if(!alive()||!target.InterfaceCurrent()||!((IPEndPoint)socket.LocalEndPoint).Address.Equals(target.Source))throw new IOException("USB-подключение изменилось.");return socket;
   }catch{socket.Close();throw;}
  }
@@ -66,10 +66,10 @@ internal sealed class TcpAdbForwarder:IDisposable {
 
 internal static class TcpAdbHelper {
  internal const string MissingUsb="ADB запущен, но телефон по USB не найден.";
- internal static bool ShouldFallback(bool enabled,TcpAdbCableTarget target,string usbResult){return enabled&&target!=null&&usbResult!=null&&usbResult.StartsWith(MissingUsb,StringComparison.Ordinal);}
+ internal static bool ShouldFallback(TcpAdbCableTarget target,string usbResult){return target!=null&&usbResult!=null&&usbResult.StartsWith(MissingUsb,StringComparison.Ordinal);}
  internal static bool IsLoopbackSerial(string value){if(value==null||!value.StartsWith("127.0.0.1:",StringComparison.Ordinal))return false;int port;return int.TryParse(value.Substring(10),System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out port)&&port>0&&port<=65535&&value=="127.0.0.1:"+port.ToString(System.Globalization.CultureInfo.InvariantCulture);}
  internal static string SelectExact(string listing,string serial){
-  string state=State(listing,serial);if(state=="")throw new IOException("Подготовленный телефон не ответил через USB-сеть. Проверьте подготовку на домашнем ПК.");
+  string state=State(listing,serial);if(state=="")throw new IOException("Для VPN и Wi-Fi нужен служебный доступ телефона. На ПК с работающей USB-отладкой: «Подключение» → «Служебный доступ» → «Разрешить доступ».");
   if(state=="unauthorized")throw new IOException("На телефоне разрешите USB-отладку для этого компьютера. Затем повторите подключение.");
   if(state!="device")throw new IOException("Телефон ещё не готов к служебному подключению. Разблокируйте его и повторите попытку.");return serial;
  }
@@ -83,7 +83,7 @@ internal static class TcpAdbHelper {
    serial=forward.Serial;
    // Forget only a possible old entry for our newly allocated loopback port.
    client(adb.Executable,new string[]{"disconnect",serial},1500);
-   if(!current())throw new IOException("Кабель отключён.");HelperProcessResult connect=client(adb.Executable,new string[]{"connect",serial},5000);if(connect==null||connect.TimedOut||!current())throw new IOException("Служебное подключение не ответило вовремя.");
+   if(!current())throw new IOException("Кабель отключён.");HelperProcessResult connect=client(adb.Executable,new string[]{"connect",serial},5000);if(connect==null||connect.TimedOut||!current())throw new IOException("Служебное подключение не ответило вовремя. Для проверки откройте «Подключение» → «Служебный доступ» на ПК с работающей USB-отладкой.");
    string listing=AdbHelper.CheckedCall(adb.Executable,client,current,4000,"devices","-l").Output;string state=State(listing,serial);
    if(state=="unauthorized"||state=="offline"||(state==""&&connect.ExitCode==0)){
     bool notified=false;long absentSince=state==""?0:-1;Stopwatch authorization=Stopwatch.StartNew();
@@ -97,7 +97,7 @@ internal static class TcpAdbHelper {
    string exact=SelectExact(listing,serial);
    if(AdbHelper.CheckedCall(adb.Executable,client,current,4000,"-s",exact,"get-serialno").Output.Trim()!=serial)throw new IOException("Служебное USB-подключение изменилось.");
    return AdbHelper.StartSelected(adb.Executable,client,current,exact);
-  }}catch(IOException error){return error.Message;}catch(Exception){return "Не удалось запустить системный доступ через USB-сеть. Обычный интернет по кабелю не изменён.";}
+  }}catch(IOException error){return error.Message;}catch(Exception){return "Не удалось запустить служебный доступ через USB-модем. Для проверки откройте «Подключение» → «Служебный доступ» на ПК с работающей USB-отладкой.";}
   finally{if(serial!=null)try{client(adb.Executable,new string[]{"disconnect",serial},1500);}catch{}}
  }
  // Called exclusively from an explicit stopped-UI confirmation, never fallback.
@@ -105,24 +105,19 @@ internal static class TcpAdbHelper {
   return SetPreparedMode(adb,run,available,alive,enable,confirmed,12000);
  }
  internal static string SetPreparedMode(HelperAdbLocation adb,HelperProcessRunner run,HelperAdbPortAvailable available,HelperSessionAlive alive,bool enable,bool confirmed,int verificationBudget){
-  if(!confirmed)throw new IOException("Подготовка не разрешена пользователем.");if(adb.Executable==null)return adb.Problem;HelperProcessRunner client=AdbHelper.ClientRunner(adb,run,available);
+  if(!confirmed)throw new IOException("Изменение служебного доступа не разрешено пользователем.");if(adb.Executable==null)return adb.Problem;HelperProcessRunner client=AdbHelper.ClientRunner(adb,run,available);
   try{string serial=AdbHelper.SelectUsbCandidate(AdbHelper.CheckedCall(adb.Executable,client,alive,5000,"devices","-l").Output);string physical=AdbHelper.CheckedCall(adb.Executable,client,alive,4000,"-d","get-serialno").Output.Trim();if(physical!=serial)throw new IOException("Оставьте один телефон, разрешённый для USB-отладки.");
    string previous=AdbHelper.CheckedCall(adb.Executable,client,alive,4000,"-s",serial,"shell","getprop","service.adb.tcp.port").Output.Trim();
    string persistent=AdbHelper.CheckedCall(adb.Executable,client,alive,4000,"-s",serial,"shell","getprop","persist.adb.tcp.port").Output.Trim(),addresses=AdbHelper.CheckedCall(adb.Executable,client,alive,4000,"-s",serial,"shell","getprop","service.adb.listen_addrs").Output.Trim();
-   if((persistent!=""&&persistent!="0"&&persistent!="-1")||addresses!="")return "На телефоне уже настроен другой способ сетевой отладки. Он не изменён; автоматическая подготовка остановлена.";
+   if((persistent!=""&&persistent!="0"&&persistent!="-1")||addresses!="")return "На телефоне уже настроен другой способ сетевой отладки. Он не изменён; настройки служебного доступа не менялись.";
    if(enable){string secure=AdbHelper.CheckedCall(adb.Executable,client,alive,4000,"-s",serial,"shell","getprop","ro.adb.secure").Output.Trim();if(secure!="1")return "На этой сборке Android защита сетевой отладки ключом не подтверждена. Режим не включён.";}
    if(previous!=""&&previous!="0"&&previous!="-1"&&previous!="5555")return "На телефоне уже настроен другой порт сетевой отладки. Он не изменён.";
-   if((enable&&previous=="5555")||(!enable&&(previous==""||previous=="0"||previous=="-1")))return enable?"Настройка порта 5555 уже включена. Доступ с рабочего ПК ещё нужно проверить.":"Наш режим порта 5555 не включён. Другие настройки отладки не менялись.";
+   if((enable&&previous=="5555")||(!enable&&(previous==""||previous=="0"||previous=="-1")))return enable?"Служебный доступ уже включён. Нажмите «Подключить». Связь с другим ПК ещё нужно проверить.":"Наш режим порта 5555 не включён. Другие настройки отладки не менялись.";
    AdbHelper.CheckedCall(adb.Executable,client,alive,6000,enable?new string[]{"-s",serial,"tcpip","5555"}:new string[]{"-s",serial,"usb"});
-   Stopwatch wait=Stopwatch.StartNew();while(alive()&&wait.ElapsedMilliseconds<Math.Min(12000,Math.Max(0,verificationBudget))){Thread.Sleep(250);HelperProcessResult state=client(adb.Executable,new string[]{"-s",serial,"get-state"},1000);if(state==null||state.ExitCode!=0||state.Output.Trim()!="device")continue;HelperProcessResult check=client(adb.Executable,new string[]{"-s",serial,"shell","getprop","service.adb.tcp.port"},1000);if(check==null||check.ExitCode!=0)continue;string actual=check.Output.Trim();if(enable?actual=="5555":(actual==""||actual=="0"||actual=="-1"))return enable?"Настройка Android подтверждена. На рабочем ПК включите «Использовать подготовку дома». Связь с рабочим ПК ещё нужно проверить. После перезагрузки телефона подготовка может понадобиться снова.":"Наш режим порта 5555 выключен и проверен. Другие способы отладки не изменялись.";}
+   Stopwatch wait=Stopwatch.StartNew();while(alive()&&wait.ElapsedMilliseconds<Math.Min(12000,Math.Max(0,verificationBudget))){Thread.Sleep(250);HelperProcessResult state=client(adb.Executable,new string[]{"-s",serial,"get-state"},1000);if(state==null||state.ExitCode!=0||state.Output.Trim()!="device")continue;HelperProcessResult check=client(adb.Executable,new string[]{"-s",serial,"shell","getprop","service.adb.tcp.port"},1000);if(check==null||check.ExitCode!=0)continue;string actual=check.Output.Trim();if(enable?actual=="5555":(actual==""||actual=="0"||actual=="-1"))return enable?"Настройка Android подтверждена. Теперь на рабочем ПК достаточно нажать «Подключить» через USB-модем. Связь с рабочим ПК ещё нужно проверить. Android может отключить доступ после перезагрузки телефона.":"Наш режим порта 5555 выключен и проверен. Другие способы отладки не изменялись.";}
    return "Команда отправлена, но результат пока не подтверждён. Разблокируйте телефон, разрешите отладку и повторите проверку.";
-  }catch(IOException error){return error.Message;}catch(Exception){return "Подготовка не подтверждена. Подключите телефон к домашнему ПК с рабочей USB-отладкой.";}
+  }catch(IOException error){return error.Message;}catch(Exception){return "Служебный доступ не подтверждён. Подключите телефон к ПК с работающей USB-отладкой и повторите проверку.";}
  }
  internal static string SetPreparedMode(bool enable,HelperSessionAlive alive){return SetPreparedMode(AdbHelper.LocateAdb(),AdbHelper.RunProcess,delegate{return AdbHelper.CheckAdbPort(AdbHelper.BundledServerPort);},alive,enable,true);}
-}
-internal static class TcpAdbPreference {
- static string PathName{get{return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"USBBridge\\prepared-phone-mode.txt");}}
- internal static bool Enabled{get{try{return File.ReadAllText(PathName).Trim()=="1";}catch{return false;}}}
- internal static void Save(bool enabled){Directory.CreateDirectory(Path.GetDirectoryName(PathName));File.WriteAllText(PathName,enabled?"1":"0");}
 }
 }

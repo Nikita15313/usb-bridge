@@ -16,14 +16,14 @@ static class UiShape {
 }
 public sealed class CardPanel:UserControl {
  public Color Fill=Color.White;
- public CardPanel(){SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint,true);BackColor=Color.FromArgb(244,247,242);}
+ public CardPanel(){SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint|ControlStyles.ResizeRedraw,true);BackColor=Color.FromArgb(244,247,242);}
  protected override void OnPaintBackground(PaintEventArgs e){Color behind=Parent==null?SystemColors.Control:Parent.BackColor;using(SolidBrush b=new SolidBrush(behind))e.Graphics.FillRectangle(b,ClientRectangle);}
  protected override void OnPaint(PaintEventArgs e){e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;Rectangle r=new Rectangle(0,0,Math.Max(1,Width-1),Math.Max(1,Height-1));using(GraphicsPath p=UiShape.Rounded(r,18))using(SolidBrush b=new SolidBrush(Fill))e.Graphics.FillPath(b,p);}
 }
 public sealed class ModernButton:Control {
  public bool Primary;bool hover;
  readonly Color green=Color.FromArgb(20,112,91),pale=Color.FromArgb(235,246,240),line=Color.FromArgb(210,228,219);
- public ModernButton(bool primary){Primary=primary;Cursor=Cursors.Hand;TabStop=true;AccessibleRole=AccessibleRole.PushButton;SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint|ControlStyles.Selectable,true);}
+ public ModernButton(bool primary){Primary=primary;Cursor=Cursors.Hand;TabStop=true;AccessibleRole=AccessibleRole.PushButton;SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint|ControlStyles.Selectable|ControlStyles.ResizeRedraw,true);}
  protected override void OnTextChanged(EventArgs e){base.OnTextChanged(e);Invalidate();}
  protected override void OnEnabledChanged(EventArgs e){base.OnEnabledChanged(e);Invalidate();}
  protected override void OnGotFocus(EventArgs e){base.OnGotFocus(e);Invalidate();}
@@ -37,7 +37,7 @@ public sealed class ModernButton:Control {
 // Frequent counter updates repaint only their own opaque, buffered rectangle.
 // Transparent labels can ask the rounded parent to repaint on every update.
 internal sealed class TransferLabel:Label {
- public TransferLabel(){SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint,true);BackColor=Color.White;}
+ public TransferLabel(){SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.UserPaint|ControlStyles.ResizeRedraw,true);BackColor=Color.White;}
 }
 
 public sealed class MainForm:Form {
@@ -47,10 +47,11 @@ public sealed class MainForm:Form {
  readonly TransferRateSampler transferRates=new TransferRateSampler(Stopwatch.Frequency);
  readonly object connectionGate=new object();
  readonly HelperRequestGate helperRequests=new HelperRequestGate();
- TcpAdbCableTarget tcpAdbTarget;Mux tcpAdbSession;volatile bool preparedPhoneMode;bool preparingPhone;string connectionSnapshotPath;
+ TcpAdbCableTarget tcpAdbTarget;Mux tcpAdbSession;bool preparingPhone;string connectionSnapshotPath,accessSnapshotPath;
 
  public MainForm(bool autoStart){
-  preparedPhoneMode=TcpAdbPreference.Enabled;
+  // Resizing must repaint the full rounded surface, including its old pixels.
+  SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw,true);
   Text="USB Bridge";ClientSize=new Size(820,Math.Min(758,Math.Max(620,Screen.PrimaryScreen.WorkingArea.Height-70)));MinimumSize=new Size(740,Math.Min(710,Screen.PrimaryScreen.WorkingArea.Height-12));AutoScroll=true;AutoScrollMinSize=new Size(0,758);AutoScaleDimensions=new SizeF(96,96);AutoScaleMode=AutoScaleMode.Dpi;Font=new Font("Segoe UI",10);BackColor=page;ForeColor=ink;StartPosition=FormStartPosition.CenterScreen;
   Controls.Add(Label("USB Bridge",30,30,24,FontStyle.Bold,750,48));Controls.Add(Label("Интернет компьютера  →  телефон  →  Wi-Fi",12,32,74,FontStyle.Regular,750,30));
 
@@ -68,7 +69,7 @@ public sealed class MainForm:Form {
   stats=new TransferLabel();stats.Font=new Font("Segoe UI",9.5f);stats.SetBounds(20,215,720,24);stats.Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right;stats.ForeColor=muted;proofCard.Controls.Add(stats);
 
   ModernButton settings=Button("Подключение",28,600,250,false);settings.Click+=delegate{Settings();};Controls.Add(settings);
-  ModernButton help=Button("Как запустить",290,600,230,false);help.Click+=delegate{MessageBox.Show("1. Соедините компьютер и телефон кабелем.\n2. На телефоне включите «USB-модем». Если Windows не видит его или теряет интернет, выберите «MIDI».\n3. Нажмите «Подключить» в обоих приложениях. Режим кабеля определится сам.\n4. Дождитесь зелёной отметки проверки.\n5. На телефоне нажмите «Включить точку Wi-Fi».\n\nЕсли раздача потребует системный доступ, приложение на телефоне покажет нужный шаг.","Как запустить");};Controls.Add(help);
+  ModernButton help=Button("Как запустить",290,600,230,false);help.Click+=delegate{MessageBox.Show("1. Соедините компьютер и телефон кабелем.\n2. На телефоне включите «USB-модем». Если Windows не видит его или теряет интернет, выберите «MIDI».\n3. Нажмите «Подключить» в обоих приложениях. Режим кабеля определится сам.\n4. Дождитесь зелёной отметки проверки.\n5. На телефоне нажмите «Включить Wi-Fi».\n\nЕсли раздача потребует системный доступ, приложение на телефоне покажет нужный шаг.","Как запустить");};Controls.Add(help);
   ModernButton report=Button("Диагностика",532,600,260,false);report.Anchor=AnchorStyles.Top|AnchorStyles.Right;report.Click+=delegate{SaveReport();};Controls.Add(report);
   // Equal responsive columns prevent the right button covering the middle one
   // when the window is reduced to its supported minimum width.
@@ -76,7 +77,7 @@ public sealed class MainForm:Form {
   for(int column=0;column<3;column++)actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f/3));
   Control[] actionButtons={settings,help,report};for(int column=0;column<3;column++){Control button=actionButtons[column];button.Dock=DockStyle.Fill;button.Margin=new Padding(column==0?0:6,0,column==2?0:6,0);actions.Controls.Add(button,column,0);}Controls.Add(actions);
   log=new TextBox();log.SetBounds(28,644,764,30);log.Multiline=true;log.ReadOnly=true;log.ScrollBars=ScrollBars.Vertical;log.Visible=false;Controls.Add(log);
-  CardPanel updateCard=new CardPanel();updateCard.SetBounds(28,656,764,66);updateCard.Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right;Controls.Add(updateCard);updateText=Label("Обновления проверяются автоматически",10,20,13,565,42);updateText.ForeColor=muted;updateCard.Controls.Add(updateText);updateButton=Button("Проверить",598,11,146,false);updateButton.Anchor=AnchorStyles.Top|AnchorStyles.Right;updateButton.Click+=delegate{DownloadUpdate();};updateCard.Controls.Add(updateButton);Controls.Add(Label("Версия 0.15.6",9,30,733,750,22));
+  CardPanel updateCard=new CardPanel();updateCard.SetBounds(28,656,764,66);updateCard.Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right;Controls.Add(updateCard);updateText=Label("Обновления проверяются автоматически",10,20,13,565,42);updateText.ForeColor=muted;updateCard.Controls.Add(updateText);updateButton=Button("Проверить",598,11,146,false);updateButton.Anchor=AnchorStyles.Top|AnchorStyles.Right;updateButton.Click+=delegate{DownloadUpdate();};updateCard.Controls.Add(updateButton);Controls.Add(Label("Версия 0.15.7",9,30,733,750,22));
 
    FormClosing+=delegate{if(updates!=null)updates.Dispose();ticker.Stop();Stop();};ticker=new System.Windows.Forms.Timer();ticker.Interval=200;ticker.Tick+=delegate{UpdateTransferRates();UpdateUpdateControls();};ticker.Start();RefreshDevices();if(autoStart)Shown+=delegate{BeginInvoke((MethodInvoker)Start);};
  }
@@ -193,34 +194,43 @@ public sealed class MainForm:Form {
   if(!alive())return;
   // Status arrives only after the cable's authenticated handshake. Keep ADB and
   // result sending off the Mux reader and UI threads; failures never stop relay.
-  helperRequests.Enqueue(alive,delegate{try{string result="";for(int attempt=0;attempt<3&&alive();attempt++){result=AdbHelper.TryStartCable(alive,capturedTarget,preparedPhoneMode,delegate(string progress){if(alive())session.Send(8,0,Encoding.UTF8.GetBytes("HELPER|RESULT|"+progress));});if(!result.StartsWith("На телефоне разрешите USB-отладку",StringComparison.Ordinal)||attempt==2)break;session.Send(8,0,Encoding.UTF8.GetBytes("HELPER|RESULT|Разрешите USB-отладку на телефоне. После подтверждения продолжим автоматически."));for(int tick=0;tick<20&&alive();tick++)Thread.Sleep(500);}if(alive()){Report("Настройка раздачи: "+result);session.Send(8,0,Encoding.UTF8.GetBytes("HELPER|RESULT|"+result));}}catch(Exception){Report("Настройка раздачи завершилась после отключения кабеля.");}});
+  helperRequests.Enqueue(alive,delegate{try{string result="";for(int attempt=0;attempt<3&&alive();attempt++){result=AdbHelper.TryStartCable(alive,capturedTarget,delegate(string progress){if(alive())session.Send(8,0,Encoding.UTF8.GetBytes("HELPER|RESULT|"+progress));});if(!result.StartsWith("На телефоне разрешите USB-отладку",StringComparison.Ordinal)||attempt==2)break;session.Send(8,0,Encoding.UTF8.GetBytes("HELPER|RESULT|Разрешите USB-отладку на телефоне. После подтверждения продолжим автоматически."));for(int tick=0;tick<20&&alive();tick++)Thread.Sleep(500);}if(alive()){Report("Настройка раздачи: "+result);session.Send(8,0,Encoding.UTF8.GetBytes("HELPER|RESULT|"+result));}}catch(Exception){Report("Настройка раздачи завершилась после отключения кабеля.");}});
  }
   static string MidiPort(uint id,string[] ports){string prefix=id+" · ";foreach(string port in ports)if(port.StartsWith(prefix,StringComparison.Ordinal))return port;return "";}
   void Stop(){transferRates.Reset();Mux old;IDisposable device;lock(connectionGate){stopping=true;Interlocked.Increment(ref generation);old=mux;mux=null;tcpAdbTarget=null;tcpAdbSession=null;device=transport;transport=null;}Wire.Run(delegate{if(old!=null)try{old.Dispose();}catch{}if(device!=null)try{device.Dispose();}catch{}});if(connect!=null)connect.Text="Подключить";if(adapters!=null)adapters.Enabled=true;if(status!=null){status.Text="Отключено";status.ForeColor=ink;}if(detail!=null)detail.Text="Для подключения нажмите кнопку на телефоне и компьютере.";if(source!=null)source.Text="Источник Windows будет показан после подключения.";if(wifiState!=null)wifiState.Text="Точка Wi-Fi настраивается в приложении телефона.";if(stats!=null)stats.Text="";}
  void Settings(){
-  if(!stopping||preparingPhone){MessageBox.Show("Сначала остановите подключение и дождитесь подготовки телефона.","Подключение");return;}
-  using(Form f=new Form()){f.Text="Подключение";f.ClientSize=new Size(600,Math.Min(600,Math.Max(430,Screen.PrimaryScreen.WorkingArea.Height-100)));f.AutoScroll=true;f.AutoScrollMinSize=new Size(0,600);f.Font=Font;f.BackColor=page;f.ForeColor=ink;f.StartPosition=FormStartPosition.CenterParent;f.FormBorderStyle=FormBorderStyle.FixedDialog;f.MaximizeBox=f.MinimizeBox=false;
+  if(!stopping||preparingPhone){MessageBox.Show("Сначала остановите подключение и дождитесь проверки служебного доступа.","Подключение");return;}
+  using(Form f=new Form()){f.Text="Подключение";f.ClientSize=new Size(600,Math.Min(360,Math.Max(300,Screen.PrimaryScreen.WorkingArea.Height-100)));f.AutoScroll=true;f.AutoScrollMinSize=new Size(0,360);f.Font=Font;f.BackColor=page;f.ForeColor=ink;f.StartPosition=FormStartPosition.CenterParent;f.FormBorderStyle=FormBorderStyle.FixedDialog;f.MaximizeBox=f.MinimizeBox=false;
    f.Controls.Add(Label("Режим кабеля",12,22,20,550,28));ComboBox mode=new ComboBox();mode.SetBounds(22,53,556,32);mode.DropDownStyle=ComboBoxStyle.DropDownList;mode.Items.AddRange(new object[]{"Автоматически — USB-модем, затем MIDI","Только MIDI","Только USB-модем"});mode.SelectedIndex=kind;f.Controls.Add(mode);
    f.Controls.Add(Label("MIDI-порты телефона (обычно определяются сами)",10,22,105,550,28));ComboBox mi=new ComboBox(),mo=new ComboBox();mi.DropDownStyle=mo.DropDownStyle=ComboBoxStyle.DropDownList;mi.SetBounds(22,139,556,31);mo.SetBounds(22,183,556,31);mi.Items.Add("Автоматически");mo.Items.Add("Автоматически");mi.Items.AddRange(MidiDevice.Inputs());mo.Items.AddRange(MidiDevice.Outputs());mi.SelectedIndex=mo.SelectedIndex=0;if(mi.Items.Contains(chosenInput))mi.SelectedItem=chosenInput;if(mo.Items.Contains(chosenOutput))mo.SelectedItem=chosenOutput;f.Controls.Add(mi);f.Controls.Add(mo);
    f.Controls.Add(Label("USB-модем быстрее. MIDI подходит, если компьютер не видит USB-модем.",10,22,229,550,35));
-   CheckBox prepared=new CheckBox();prepared.Text="Использовать подготовку дома на этом ПК";prepared.SetBounds(22,279,550,34);prepared.Checked=preparedPhoneMode;f.Controls.Add(prepared);
-   f.Controls.Add(Label("Флажок разрешает этой программе служебную связь через USB-модем. Сам он не включает и не выключает отладку телефона. Сначала выполните подготовку дома; после перезагрузки она может понадобиться снова. Через MIDI этот вариант не работает.",10,22,317,550,80));
-   ModernButton prepare=Button("Подготовить дома",22,411,266,false),disable=Button("Отключить подготовку",302,411,276,false);f.Controls.Add(prepare);f.Controls.Add(disable);
-   ModernButton ok=Button("Сохранить",396,535,182,true);ok.Click+=delegate{try{TcpAdbPreference.Save(prepared.Checked);}catch{MessageBox.Show(f,"Не удалось сохранить настройку в папке пользователя.","Подключение");return;}kind=mode.SelectedIndex;chosenInput=mi.SelectedIndex>0?mi.Text:"";chosenOutput=mo.SelectedIndex>0?mo.Text:"";preparedPhoneMode=prepared.Checked;f.DialogResult=DialogResult.OK;};f.Controls.Add(ok);
-   prepare.Click+=delegate{PreparePhone(f,true,prepare,disable,ok);};disable.Click+=delegate{PreparePhone(f,false,prepare,disable,ok);};
-   f.Controls.Add(Label("Здесь меняется только служебная связь с телефоном. Драйверы и настройки сети Windows не устанавливаются.",9,22,470,550,50));if(connectionSnapshotPath==null)f.ShowDialog(this);else{f.Show();Application.DoEvents();using(Bitmap bitmap=new Bitmap(f.Width,f.Height)){f.DrawToBitmap(bitmap,new Rectangle(Point.Empty,bitmap.Size));bitmap.Save(connectionSnapshotPath,System.Drawing.Imaging.ImageFormat.Png);}f.Close();}
+   ModernButton access=Button("Служебный доступ",22,279,270,false);access.Click+=delegate{PhoneAccess(f);};f.Controls.Add(access);
+   ModernButton ok=Button("Сохранить",396,279,182,true);ok.Click+=delegate{if(preparingPhone)return;kind=mode.SelectedIndex;chosenInput=mi.SelectedIndex>0?mi.Text:"";chosenOutput=mo.SelectedIndex>0?mo.Text:"";f.DialogResult=DialogResult.OK;};f.Controls.Add(ok);
+   if(connectionSnapshotPath==null)f.ShowDialog(this);else{f.Show();Application.DoEvents();using(Bitmap bitmap=new Bitmap(f.Width,f.Height)){f.DrawToBitmap(bitmap,new Rectangle(Point.Empty,bitmap.Size));bitmap.Save(connectionSnapshotPath,System.Drawing.Imaging.ImageFormat.Png);}f.Close();}
   }RefreshDevices();
  }
  public void SnapshotConnection(string path){connectionSnapshotPath=path;try{Settings();}finally{connectionSnapshotPath=null;}}
- void PreparePhone(Form owner,bool enable,Control first,Control second,Control save){
-  if(preparingPhone||!stopping||updateBusy||readyUpdate!=null)return;
-  string explanation=enable?"Подключите только один телефон к этому домашнему ПК и разрешите USB-отладку.\n\nВключится сетевая отладка Android на порту 5555. Команды защищены разрешением ключа компьютера, но сам TCP-канал не шифруется и может быть доступен через другие сети телефона. Используйте только доверенные сети.\n\nНа рабочем ПК USB Bridge обратится к телефону через USB-модем, без USB ADB-драйвера. После перезагрузки телефона настройку, возможно, придётся повторить.\n\nВключить этот режим?":"Отключить наш режим порта 5555? Нужен домашний ПК с работающей USB-отладкой. Сам флажок выше отладку телефона не отключает. Альтернатива на телефоне — выключить USB-отладку в настройках разработчика. Другие способы сетевой отладки эта кнопка не меняет.";
-  if(MessageBox.Show(owner,explanation,"Подготовка телефона",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;
-  preparingPhone=true;first.Enabled=second.Enabled=save.Enabled=false;first.Text="Подождите…";
-  Wire.Run(delegate{string result=TcpAdbHelper.SetPreparedMode(enable,delegate{return !IsDisposed&&!owner.IsDisposed;});Report("Подготовка рабочего ПК: "+result);Ui(delegate{preparingPhone=false;if(owner.IsDisposed)return;first.Text="Подготовить дома";first.Enabled=second.Enabled=save.Enabled=true;MessageBox.Show(owner,result,"Подготовка телефона");});});
+ public void SnapshotAccess(string path){accessSnapshotPath=path;try{PhoneAccess(this);}finally{accessSnapshotPath=null;}}
+ void PhoneAccess(Form owner){
+  if(preparingPhone||!stopping)return;
+  using(Form f=new Form()){f.Text="Служебный доступ";f.ClientSize=new Size(600,Math.Min(440,Math.Max(320,Screen.PrimaryScreen.WorkingArea.Height-100)));f.AutoScroll=true;f.AutoScrollMinSize=new Size(0,440);f.Font=Font;f.BackColor=page;f.ForeColor=ink;f.StartPosition=FormStartPosition.CenterParent;f.FormBorderStyle=FormBorderStyle.FixedDialog;f.MaximizeBox=f.MinimizeBox=false;
+   f.Controls.Add(Label("Для VPN и раздачи Wi-Fi",15,22,22,550,34));
+   f.Controls.Add(Label("Обычно здесь ничего нажимать не нужно: кнопка «Подключить» сама выбирает доступный способ связи с телефоном.",11,22,70,550,65));
+   f.Controls.Add(Label("Если на ПК нет USB ADB-драйвера, один раз разрешите доступ на компьютере, где USB-отладка работает. После этого на рабочем ПК достаточно «Подключить» через USB-модем.",10,22,145,550,90));
+   ModernButton enable=Button("Разрешить доступ",22,253,270,true),disable=Button("Отключить доступ",308,253,270,false),close=Button("Закрыть",396,376,182,false);f.Controls.Add(enable);f.Controls.Add(disable);f.Controls.Add(close);
+   f.Controls.Add(Label("Android может отключить этот доступ после перезагрузки телефона. Через MIDI доступ без драйвера не работает.",10,22,312,550,55));
+   enable.Click+=delegate{ChangePhoneAccess(f,true,enable,disable,close);};disable.Click+=delegate{ChangePhoneAccess(f,false,enable,disable,close);};close.Click+=delegate{f.Close();};if(accessSnapshotPath==null)f.ShowDialog(owner);else{f.Show();Application.DoEvents();using(Bitmap bitmap=new Bitmap(f.Width,f.Height)){f.DrawToBitmap(bitmap,new Rectangle(Point.Empty,bitmap.Size));bitmap.Save(accessSnapshotPath,System.Drawing.Imaging.ImageFormat.Png);}f.Close();}
+  }
  }
-  void SaveReport(){using(SaveFileDialog d=new SaveFileDialog()){d.FileName="USBBridge-report.txt";d.Filter="Текст|*.txt";if(d.ShowDialog()==DialogResult.OK)try{File.WriteAllText(d.FileName,"USB Bridge 0.15.6\r\n"+Environment.OSVersion+"\r\nCLR "+Environment.Version+"; processBits="+(IntPtr.Size*8)+"\r\n"+stats.Text+"\r\n"+relayDiagnostics+"\r\n"+source.Text+"\r\n"+status.Text+"\r\n"+detail.Text+"\r\n"+wifiState.Text+"\r\n"+NetworkCatalog.Describe(NetworkCatalog.All())+"\r\n"+log.Text,Encoding.UTF8);}catch(Exception e){MessageBox.Show("Не удалось сохранить: "+e.Message);}}}
- public void SnapshotUpdate(string path,bool active,bool ready){offeredUpdate=new UpdateRelease{Code=157,Name="0.15.7"};if(ready)readyUpdate=offeredUpdate;stopping=!active;UpdateUpdateControls();Snapshot(path);}
+ void ChangePhoneAccess(Form owner,bool enable,Control first,Control second,Control save){
+  if(preparingPhone||!stopping||updateBusy||readyUpdate!=null)return;
+  string explanation=enable?"Подключите только один телефон к этому ПК и разрешите USB-отладку.\n\nВключится сетевая отладка Android на порту 5555. Команды защищены разрешением ключа компьютера, но сам TCP-канал не шифруется и может быть доступен через другие сети телефона. Используйте только доверенные сети.\n\nUSB Bridge сможет запускать служебный доступ через USB-модем, если на другом ПК нет USB ADB-драйвера. Никаких флажков на рабочем ПК не потребуется. Android может сбросить разрешение после перезагрузки телефона.\n\nРазрешить этот доступ?":"Отключить служебный доступ без USB-драйвера на порту 5555? Нужен ПК с работающей USB-отладкой.\n\nНа ПК без ADB-драйвера помощник через USB-модем больше не запустится. Другие способы сетевой отладки эта кнопка не меняет.";
+  if(MessageBox.Show(owner,explanation,"Служебный доступ",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)!=DialogResult.Yes)return;
+  preparingPhone=true;first.Enabled=second.Enabled=save.Enabled=false;first.Text="Подождите…";
+  Wire.Run(delegate{string result=TcpAdbHelper.SetPreparedMode(enable,delegate{return !IsDisposed&&!owner.IsDisposed;});Report("Служебный доступ: "+result);Ui(delegate{preparingPhone=false;if(owner.IsDisposed)return;first.Text="Разрешить доступ";first.Enabled=second.Enabled=save.Enabled=true;MessageBox.Show(owner,result,"Служебный доступ");});});
+ }
+  void SaveReport(){using(SaveFileDialog d=new SaveFileDialog()){d.FileName="USBBridge-report.txt";d.Filter="Текст|*.txt";if(d.ShowDialog()==DialogResult.OK)try{File.WriteAllText(d.FileName,"USB Bridge 0.15.7\r\n"+Environment.OSVersion+"\r\nCLR "+Environment.Version+"; processBits="+(IntPtr.Size*8)+"\r\n"+stats.Text+"\r\n"+relayDiagnostics+"\r\n"+source.Text+"\r\n"+status.Text+"\r\n"+detail.Text+"\r\n"+wifiState.Text+"\r\n"+NetworkCatalog.Describe(NetworkCatalog.All())+"\r\n"+log.Text,Encoding.UTF8);}catch(Exception e){MessageBox.Show("Не удалось сохранить: "+e.Message);}}}
+ public void SnapshotUpdate(string path,bool active,bool ready){offeredUpdate=new UpdateRelease{Code=158,Name="0.15.8"};if(ready)readyUpdate=offeredUpdate;stopping=!active;UpdateUpdateControls();Snapshot(path);}
  public void Snapshot(string path){Show();Application.DoEvents();using(Bitmap b=new Bitmap(Width,Height)){DrawToBitmap(b,new Rectangle(0,0,Width,Height));b.Save(path);}Close();}
 }
 
@@ -232,11 +242,12 @@ static class Program {
   Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
   if(args.Length==2&&(args[0]=="--snapshot"||args[0]=="--snapshot-narrow")){using(MainForm preview=new MainForm(false)){if(args[0]=="--snapshot-narrow")preview.Width=preview.MinimumSize.Width;preview.Snapshot(args[1]);}return 0;}
   if(args.Length==2&&args[0]=="--snapshot-connection"){using(MainForm preview=new MainForm(false))preview.SnapshotConnection(args[1]);return 0;}
+  if(args.Length==2&&args[0]=="--snapshot-access"){using(MainForm preview=new MainForm(false))preview.SnapshotAccess(args[1]);return 0;}
   if(!UpdateInstaller.WaitForPrevious(args))return 1;if(UpdateInstaller.TryForward(args))return 0;
   if(args.Length==2&&args[0].StartsWith("--snapshot-update-",StringComparison.Ordinal)){using(MainForm preview=new MainForm(false)){if(args[0].EndsWith("narrow",StringComparison.Ordinal))preview.Width=preview.MinimumSize.Width;preview.SnapshotUpdate(args[1],args[0].IndexOf("active",StringComparison.Ordinal)>=0,args[0].IndexOf("ready",StringComparison.Ordinal)>=0);}return 0;}
   using(SingleInstance instance=new SingleInstance("Local\\USBBridge.Desktop.1")){
    if(!instance.IsOwner){SingleInstance.ActivateExisting();return 0;}
-   DiagnosticLog.Write("USB Bridge 0.15.6 started; PID "+System.Diagnostics.Process.GetCurrentProcess().Id);
+   DiagnosticLog.Write("USB Bridge 0.15.7 started; PID "+System.Diagnostics.Process.GetCurrentProcess().Id);
    using(MainForm form=new MainForm(args.Length==0)){form.Shown+=delegate{UpdateInstaller.ConfirmCurrentInstallation();};form.EnableUpdates();Application.Run(form);}return 0;
   }
  }catch(Exception e){if(args.Length>0){try{Console.Error.WriteLine(e.ToString());}catch{}return 1;}MessageBox.Show("USB Bridge не удалось запустить.\r\n"+e.Message,"USB Bridge");return 1;}}

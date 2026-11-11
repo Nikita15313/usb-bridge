@@ -1,0 +1,30 @@
+{
+  "sha256": "afdb2fe6f2e3631afc7ed9932affd830abc491805215759df577b762bb0c4a61",
+  "bytes": 1763312,
+  "dex": [
+    "classes.dex"
+  ],
+  "script_sha256": "6bddadbda791088b068cbfcc16474537d688fd6cb2d797df64ce417d7b92f1b8",
+  "script_bytes": 3140,
+  "runtime_class_definitions": 3800,
+  "verified_runtime_classes": [
+    "Lmoe/shizuku/api/BinderContainer$1;",
+    "Lmoe/shizuku/api/BinderContainer;",
+    "Lmoe/shizuku/server/IRemoteProcess$Stub;",
+    "Lmoe/shizuku/server/IShizukuApplication$Stub;",
+    "Lmoe/shizuku/server/IShizukuService$Stub;",
+    "Lmoe/shizuku/server/IShizukuServiceConnection$Stub;",
+    "Lmoe/shizuku/starter/ServiceStarter;",
+    "Lrikka/hidden/compat/PermissionManagerApis;",
+    "Lrikka/parcelablelist/ParcelableListSlice$1;",
+    "Lrikka/parcelablelist/ParcelableListSlice;",
+    "Lrikka/rish/RishConfig;",
+    "Lrikka/shizuku/ShizukuProvider;",
+    "Lrikka/shizuku/server/ShizukuService;",
+    "Lrikka/shizuku/server/ShizukuUserServiceManager;",
+    "Lrikka/shizuku/server/UserServiceRecord;"
+  ],
+  "unresolved_nonplatform_type_references": [],
+  "payload": "server.jar",
+  "script": "start-helper157.sh"
+}

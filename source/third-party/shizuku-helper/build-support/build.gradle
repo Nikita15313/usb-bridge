@@ -1,0 +1,13 @@
+subprojects {
+ plugins.withId('com.android.base') {
+  android {
+   compileSdk=36
+   buildToolsVersion='36.1.0'
+   defaultConfig { minSdk=24; targetSdk=36 }
+   compileOptions { sourceCompatibility=JavaVersion.VERSION_21; targetCompatibility=JavaVersion.VERSION_21 }
+  }
+ }
+ tasks.withType(JavaCompile).configureEach {
+  doFirst { fileTree(layout.buildDirectory.dir('generated/aidl_source_output_dir')).matching { include '**/*.java' }.each { f -> f.text=f.readLines().findAll { !it.contains('* Using:') }.join('\n')+'\n' } }
+ }
+}

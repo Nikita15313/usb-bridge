@@ -1,0 +1,30 @@
+{
+  "name": "USB Bridge Shizuku compatibility payload157",
+  "license": "Apache-2.0",
+  "modified": true,
+  "officialShizukuRelease": false,
+  "runtimeChangedFiles": [
+    "server/src/main/java/rikka/shizuku/server/ShizukuService.java"
+  ],
+  "patch": "combined-runtime.patch",
+  "changes": [
+    "Preserve manager attachment after an optional OEM-denied WRITE_SECURE_SETTINGS convenience grant; no denied permission is granted.",
+    "At startup publish Binder to the exact installed local.usbbridge package in user0 when it declares Shizuku API permission, using the upstream provider and unchanged access checks; do not force-stop this client."
+  ],
+  "manager": {
+    "package": "moe.shizuku.privileged.api",
+    "versionCode": 1086,
+    "sha256": "6e273ab0e991c4e79bc8b1bbb9b9dd739ccac1a8712a541a214078886b7b790f"
+  },
+  "build": {
+    "gradle": "8.13",
+    "agp": "8.13.2",
+    "kotlin": "2.1.21",
+    "compileSdk": 36,
+    "buildTools": "36.1.0",
+    "java": 21
+  },
+  "upstream": "UPSTREAM.json",
+  "artifact": "ARTIFACT.json",
+  "remoteDirectory": "/data/local/tmp/usbbridge-helper157"
+}

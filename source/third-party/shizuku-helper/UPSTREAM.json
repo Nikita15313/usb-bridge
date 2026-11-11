@@ -1,0 +1,14 @@
+[
+  {
+    "repo": "RikkaApps/Shizuku",
+    "commit": "2650830c5b099ae0dd34fedf614d4f592ca05d65",
+    "source": "https://codeload.github.com/RikkaApps/Shizuku/zip/2650830c5b099ae0dd34fedf614d4f592ca05d65",
+    "sha256": "f5876e286aee4cefe598e53c48660deca275b188f7f14c5d9a32a07733e4ada1"
+  },
+  {
+    "repo": "RikkaApps/Shizuku-API",
+    "commit": "510fc988c02c3475d8c25db170f96792f105bdf8",
+    "source": "https://codeload.github.com/RikkaApps/Shizuku-API/zip/510fc988c02c3475d8c25db170f96792f105bdf8",
+    "sha256": "f6ac488e3f5cdf66d932d3302f8894661d5a5450477f91e293022ba2fe8c1eb1"
+  }
+]

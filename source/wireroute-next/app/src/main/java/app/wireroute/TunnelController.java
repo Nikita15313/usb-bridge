@@ -94,6 +94,7 @@ public final class TunnelController {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Set<Listener> listeners = new CopyOnWriteArraySet<>();
     private volatile Snapshot snapshot = new Snapshot(State.DOWN, Failure.NONE);
+    private volatile String runtimeEndpointClass = "UNKNOWN";
     private boolean connectionDesired;
     private long operationGeneration;
     private long userActionGeneration;
@@ -119,9 +120,37 @@ public final class TunnelController {
         return snapshot;
     }
 
+    public String getRuntimeEndpointClass() { return runtimeEndpointClass; }
+
     public synchronized boolean isConnectionDesired() { return connectionDesired; }
 
     synchronized boolean canStartPlainUsb() { return !plainConnectivityRefresh && canStartPlainUsb(snapshot.state, connectionDesired); }
+
+    /** Keep the user's enabled VPN while changing only its transport to this cable session. */
+    boolean handoverSystemToUsb(long requestedSession) {
+        // Provider and ConnectivityManager calls stay outside the controller monitor.
+        long offeredSession = UsbBridgeUnderlay.offeredRelaySession(context);
+        android.net.Network oldNetwork = UsbBridgeUnderlay.currentOwnedVpnNetwork(context);
+        synchronized (this) {
+            if (!canHandoverSystemToUsb(snapshot.state, connectionDesired,
+                    UsbBridgeUnderlay.active(), requestedSession, offeredSession,
+                    hasPendingConfigurationChanges())) return false;
+            android.util.Log.i("WireRouteUsb", "Switch active SYSTEM VPN to USB; session=" + requestedSession);
+            // Reuse the serialized stop/restart path. Its session and user-action
+            // checks prevent an unplug or a newer Off action from restarting VPN.
+            stopConnection(true, requestedSession, userActionGeneration,
+                    oldNetwork == null ? 0 : oldNetwork.getNetworkHandle());
+            return true;
+        }
+    }
+
+    static boolean canHandoverSystemToUsb(State state, boolean desired, boolean usbActive,
+                                         long requestedSession, long offeredSession,
+                                         boolean pendingConfiguration) {
+        return desired && !usbActive && !pendingConfiguration
+                && (state == State.UP || state == State.CONNECTING)
+                && requestedSession > 0 && requestedSession == offeredSession;
+    }
 
     void refreshUsbConnectivity(boolean encrypted) {
         android.os.Bundle offered = UsbBridgeUnderlay.query(context);
@@ -207,16 +236,25 @@ public final class TunnelController {
                 || !appliedPackages.equals(routingPreferences.getSelectedPackages()));
     }
 
-    private void preResolveEndpoints(Config config) throws ControllerFailure {
+    private String preResolveEndpoints(Config config) throws ControllerFailure {
         // GoBackend resolves again during UP while holding our native-handle monitor.
         // Warm its endpoint cache before starting the service: a DNS failure must not
         // make Android's main-thread onDestroy wait through the backend's retry loop.
+        String classification = null;
         for (com.wireguard.config.Peer peer : config.getPeers()) {
             com.wireguard.config.InetEndpoint endpoint = peer.getEndpoint().orElse(null);
-            if (endpoint != null && !endpoint.getResolved().isPresent()) {
-                throw new ControllerFailure(Failure.DNS);
+            if (endpoint == null) {
+                classification = RuntimeEndpointClass.merge(classification, "UNKNOWN");
+            } else {
+                // Reuse the existing single resolution call; classification itself
+                // is numeric-only and never performs a second DNS lookup.
+                java.util.Optional<com.wireguard.config.InetEndpoint> resolved = endpoint.getResolved();
+                if (!resolved.isPresent()) throw new ControllerFailure(Failure.DNS);
+                classification = RuntimeEndpointClass.merge(classification,
+                        RuntimeEndpointClass.classify(resolved.get().getHost()));
             }
         }
+        return classification == null ? "UNKNOWN" : classification;
     }
 
     private void setBackendState(Tunnel.State state, Config config) throws Exception {
@@ -229,6 +267,7 @@ public final class TunnelController {
             if (state == Tunnel.State.DOWN && (backend.getState(tunnel) != Tunnel.State.DOWN
                     || !backend.getRunningTunnelNames().isEmpty()))
                 throw new ControllerFailure(Failure.VPN_INTERFACE);
+            if (state == Tunnel.State.DOWN) runtimeEndpointClass = "UNKNOWN";
         }
         if (state == Tunnel.State.DOWN) {
             // Also cleans up a foreground service when activation failed before a TUN existed.
@@ -372,8 +411,9 @@ public final class TunnelController {
                     try { runtimeConfig = UsbBridgeUnderlay.adaptRuntime(context, runtimeConfig, this::usbConnectionLost); }
                     catch (Exception failure) { throw new ControllerFailure(Failure.USB_SOURCE); }
                 }
-                preResolveEndpoints(runtimeConfig);
+                String endpointClass = preResolveEndpoints(runtimeConfig);
                 if (!operationCurrent(generation)) return;
+                runtimeEndpointClass = endpointClass;
                 setBackendState(Tunnel.State.UP, runtimeConfig);
                 if(usb)UsbBridgeUnderlay.report(context,"started");
                 if (!publishUpIfCurrent(generation, mode, selectedPackages, sourceRevision)) {
@@ -383,14 +423,42 @@ public final class TunnelController {
             } catch (Throwable error) {
                 // Publish the real failure before cleanup. A service-destroyed
                 // callback caused by that cleanup must not replace it with DOWN.
-                publishErrorIfCurrent(generation, classify(error));
+                Failure failure = classify(error);
+                publishErrorIfCurrent(generation, failure);
+                boolean backendStopped = false;
                 try {
                     setBackendState(Tunnel.State.DOWN, null);
+                    backendStopped = true;
                 } catch (Throwable ignored) {
                     // Best effort cleanup. The original, safely classified error is more useful.
                 }
+                if (requiredUsbSession > 0 && backendStopped
+                        && (failure == Failure.USB_SOURCE || failure == Failure.USB_SWITCH)) {
+                    // A cable can disappear after the stop worker checked its session
+                    // but before begin() attaches the new USB relay. No relay observer
+                    // exists then. Release the stale enabled intent so the Bridge's
+                    // next plain bootstrap can recover, without selecting mobile data.
+                    long offeredSession = UsbBridgeUnderlay.offeredRelaySession(context);
+                    synchronized (TunnelController.this) {
+                        if (shouldCancelPinnedUsbStart(failure, requiredUsbSession, offeredSession,
+                                generation, operationGeneration, backendStopped)) {
+                            connectionDesired = false;
+                            update(State.DOWN, Failure.NONE);
+                            android.util.Log.i("WireRouteUsb", "Cancel ended USB handover; session="
+                                    + requiredUsbSession);
+                        }
+                    }
+                }
             }
         });
+    }
+
+    static boolean shouldCancelPinnedUsbStart(Failure failure, long requiredSession,
+                                              long offeredSession, long expectedGeneration,
+                                              long currentGeneration, boolean backendStopped) {
+        return backendStopped && (failure == Failure.USB_SOURCE || failure == Failure.USB_SWITCH)
+                && requiredSession > 0
+                && requiredSession != offeredSession && expectedGeneration == currentGeneration;
     }
 
     public synchronized void disconnect() {

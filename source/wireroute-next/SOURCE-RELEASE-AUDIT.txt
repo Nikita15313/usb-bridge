@@ -1,0 +1,58 @@
+WireRoute source release audit — 3.1.13-usb-handover / code323
+
+Source provenance
+- Base: code321 / 3.1.11-station-route, retaining the local Station-route behavior.
+- Release323 changes TunnelController, UsbBootstrapReceiver, MainActivity,
+  app build identity, and TunnelControllerStatePolicyTest.
+- Rollback build322 remains a separate option; it is not the production323 artifact.
+- No user profiles, preferences, private signing material or generated build cache
+  are part of this source release.
+
+Build identity
+- applicationId and Android namespace: app.wireroute.release263.
+- Java implementation package: app.wireroute; manifest components are fully qualified.
+- versionCode323 / versionName3.1.13-usb-handover.
+- minSdk24 / targetSdk36 / compileSdk36; Java17.
+- WireGuard tunnel dependency: com.wireguard.android:tunnel:1.0.20260102.
+- Production323 retains the original signing identity and supports an in-place update.
+
+Change contract
+An authenticated current START_PLAIN USB offer can hand a desired, UP/CONNECTING
+SYSTEM VPN over to that exact USB session. It preserves the user's encryption
+intent and uses the existing serialized stop/start lifecycle. Off, DOWN, ERROR,
+DISCONNECTING, an already USB-active controller, pending unapplied configuration,
+and missing/wrong sessions do not initiate this handover. Losing/replacing the
+session aborts its use. No Android permission or profile/preference write is added.
+
+Preservation checks against321
+StableVpnService, StationRoutePolicy, SecureConfigStore and RoutingPreferences
+source hashes are unchanged. All8 native SO entries are byte-identical to321.
+STATION_ROUTE_SUBTRACTION_ENABLED remains true in the production323 build.
+
+Final cancellation repair verification
+- The rebuilt323 candidate passed113 JUnit tests across20 suites, with no
+  failures, errors or skips.
+- USB_SOURCE and USB_SWITCH failures from a lost/replaced setup session return
+  to idle only after successful native cleanup and a current generation check.
+  A live-session barrier failure retains ERROR; it is not silently ignored.
+- The cancellation policy is present in the rebuilt DEX; mirrored source matches
+  the actual321 base and the ASCII-path build source.
+- Final APK identity323/versionName and the original signing identity were
+  verified, then installed in place without clearing profiles.
+- Final signed APK SHA256:
+  674fbc4fb7164e5dfb2c4bab3bfe164f5142593c7d682bad1f454fcef795704c.
+
+Live acceptance and limits
+Service dumps confirmed a genuinely UP SYSTEM VPN baseline, then USB/LOOPBACK UP
+in the same process with fresh handshake/RX after normal PC Connect. This was an
+actual running-SYSTEM handover, not merely a fresh stopped-VPN connection after
+APK update. The exact Wire log marker was unavailable because logcat was empty;
+the transition conclusion uses before/after service dumps.
+With station Wi-Fi and mobile data off, live checks confirmed plain USB packet
+exchange, VPN On with fresh handshake, Telegram without Connecting, VPN Off with
+StableService gone and plain USB UP, and plain Wi-Fi AP ACTIVE via helper157.
+A second-client AP-through-VPN test on323 was not performed. The user's earlier
+confirmation belongs to321, whose native SO entries remain unchanged.
+USB kernel configuration reset/transport closure occurred during the session;
+the user reconnected the cable and its cause was not established.
+Physical work Windows7 and its network remain a separate unperformed test.

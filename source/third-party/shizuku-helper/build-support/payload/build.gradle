@@ -1,0 +1,7 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'local.usbbridge.helper157'
+ defaultConfig { applicationId 'local.usbbridge.helper157'; versionCode 157; versionName '0.15.7-server' }
+ buildTypes { release { minifyEnabled false } }
+}
+dependencies { implementation project(':server'); implementation project(':provider') }

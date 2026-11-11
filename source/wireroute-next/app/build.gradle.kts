@@ -24,8 +24,10 @@ android {
         if (project.hasProperty("uiTest")) { applicationIdSuffix = ".uitest" }
         minSdk = 24
         targetSdk = 36
-        versionCode = 319
-        versionName = "3.1.9"
+        val stationRouteRollback = project.hasProperty("stationRouteRollback")
+        versionCode = if (stationRouteRollback) 322 else 323
+        versionName = if (stationRouteRollback) "3.1.12-route-rollback" else "3.1.13-usb-handover"
+        buildConfigField("boolean", "STATION_ROUTE_SUBTRACTION_ENABLED", (!stationRouteRollback).toString())
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

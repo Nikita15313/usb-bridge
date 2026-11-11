@@ -16,6 +16,7 @@ import android.os.Process;
 import android.os.SystemClock;
 import com.wireguard.android.backend.GoBackend;
 import app.wireroute.release263.R;
+import app.wireroute.release263.BuildConfig;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.concurrent.Executors;
@@ -46,9 +47,35 @@ public final class StableVpnService extends GoBackend.VpnService {
     private long serviceStartedElapsedMillis;
     private volatile DumpObservation dumpObservation;
     private volatile UsbSplitTunnel usbSplit;
+    // Counts describe calls on the latest normal Builder; no route/IP values.
+    private volatile int stationNormalRouteAdds;
+    private volatile int stationNormalRouteSubstitutions;
+    private volatile boolean stationNormalRouteExcluded;
+    private volatile String stationNormalRoutePolicy = "OFF";
 
     @Override public Builder getBuilder() {
-        if (!UsbBridgeUnderlay.relayActive()) return super.getBuilder();
+        if (!UsbBridgeUnderlay.relayActive()) {
+            stationNormalRouteAdds = 0;
+            stationNormalRouteSubstitutions = 0;
+            stationNormalRouteExcluded = false;
+            stationNormalRoutePolicy = BuildConfig.STATION_ROUTE_SUBTRACTION_ENABLED ? "CIDR_COMPLEMENT" : "OFF";
+            if (!BuildConfig.STATION_ROUTE_SUBTRACTION_ENABLED) return super.getBuilder();
+            return new Builder() {
+                @Override public Builder addRoute(java.net.InetAddress address, int prefixLength) {
+                    StationRoutePolicy.Plan plan = StationRoutePolicy.subtract(address, prefixLength);
+                    // addRoute implicitly enables the address family. Preserve
+                    // that side effect even when the sole Station/32 vanishes.
+                    if (plan.preserveIpv4Family) super.allowFamily(android.system.OsConstants.AF_INET);
+                    for (StationRoutePolicy.Route route : plan.routes) {
+                        super.addRoute(route.address, route.prefix);
+                        stationNormalRouteAdds++;
+                    }
+                    stationNormalRouteExcluded |= plan.stationExcluded;
+                    if (plan.stationExcluded) stationNormalRouteSubstitutions++;
+                    return this;
+                }
+            };
+        }
         return new Builder() {
             private int packetMtu = 1280;
             @Override public Builder setMtu(int mtu) {
@@ -222,7 +249,12 @@ public final class StableVpnService extends GoBackend.VpnService {
         writer.println("WireRouteVpn pid=" + Process.myPid()
                 + " state=" + (current == null ? "UNKNOWN" : current.getSnapshot().state.name())
                 + " service_started_elapsed_ms=" + serviceStartedElapsedMillis
-                + " underlay_mode=" + (UsbBridgeUnderlay.active() ? "USB" : "SYSTEM"));
+                + " underlay_mode=" + (UsbBridgeUnderlay.active() ? "USB" : "SYSTEM")
+                + " runtime_endpoint_class=" + (current == null ? "UNKNOWN" : current.getRuntimeEndpointClass())
+                + " normal_route_add_calls=" + stationNormalRouteAdds
+                + " normal_route_policy=" + stationNormalRoutePolicy
+                + " normal_route_substitutions=" + stationNormalRouteSubstitutions
+                + " station_route_excluded=" + stationNormalRouteExcluded);
         Network ownedVpn = UsbBridgeUnderlay.ownVpnNetwork(this);
         writer.println("vpn_network=" + (ownedVpn == null ? 0 : ownedVpn.getNetworkHandle())
                 + " connectivity_network=" + declaredConnectivityHandle);

@@ -55,9 +55,9 @@ internal delegate HelperOverlayFiles HelperOverlayLoader();
 // supplied by a phone, web page or process output runs.
 public static class AdbHelper {
  const string Package="moe.shizuku.privileged.api";
- internal const string OverlayDirectory="/data/local/tmp/usbbridge-helper154";
- internal const string OverlayJarHash="6afeaf913e4fd1687af9d47b72c4a23c57497d5a2de25487edc2fd4a96639a20";
- internal const string OverlayScriptHash="fdb03f69f939866b985e3bd87c4b90a35a79c719f2a1e13ee2cbd44ed8bbddbc";
+ internal const string OverlayDirectory="/data/local/tmp/usbbridge-helper157";
+ internal const string OverlayJarHash="afdb2fe6f2e3631afc7ed9932affd830abc491805215759df577b762bb0c4a61";
+ internal const string OverlayScriptHash="6bddadbda791088b068cbfcc16474537d688fd6cb2d797df64ce417d7b92f1b8";
  internal const string OfficialManagerHash="6e273ab0e991c4e79bc8b1bbb9b9dd739ccac1a8712a541a214078886b7b790f";
  public const int BundledServerPort=5038;
  static readonly Regex SerialPattern=new Regex("^[A-Za-z0-9_.-]{1,128}$");
@@ -107,9 +107,9 @@ public static class AdbHelper {
  }
  internal static bool OverlayRequired(string manufacturer,string optimization){string name=(manufacturer??"").Trim();return (String.Equals(name,"OnePlus",StringComparison.OrdinalIgnoreCase)||String.Equals(name,"OPPO",StringComparison.OrdinalIgnoreCase))&&String.Equals((optimization??"").Trim(),"true",StringComparison.Ordinal);}
  internal static bool HashMatches(byte[] bytes,string expected){using(SHA256 hash=SHA256.Create()){string actual=BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant();return String.Equals(actual,expected,StringComparison.OrdinalIgnoreCase);}}
- static HelperOverlayFiles LoadOverlay(){string folder=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"helper");string jar=Path.Combine(folder,"server.jar"),script=Path.Combine(folder,"start-helper154.sh");
-  if(!File.Exists(jar)||!File.Exists(script))throw new IOException("В комплекте не хватает файлов помощника OnePlus. Распакуйте весь архив USB Bridge 0.15.4 вместе с папкой helper.");
-  if(new FileInfo(jar).Length>4194304||new FileInfo(script).Length>65536||!HashMatches(File.ReadAllBytes(jar),OverlayJarHash)||!HashMatches(File.ReadAllBytes(script),OverlayScriptHash))throw new IOException("Файлы помощника OnePlus повреждены или относятся к другой версии. Распакуйте полный комплект USB Bridge 0.15.4 заново.");
+ static HelperOverlayFiles LoadOverlay(){string folder=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"helper");string jar=Path.Combine(folder,"server.jar"),script=Path.Combine(folder,"start-helper157.sh");
+  if(!File.Exists(jar)||!File.Exists(script))throw new IOException("В комплекте не хватает файлов помощника OnePlus. Распакуйте полный комплект USB Bridge вместе с папкой helper.");
+  if(new FileInfo(jar).Length>4194304||new FileInfo(script).Length>65536||!HashMatches(File.ReadAllBytes(jar),OverlayJarHash)||!HashMatches(File.ReadAllBytes(script),OverlayScriptHash))throw new IOException("Файлы помощника OnePlus повреждены или относятся к другой версии. Распакуйте полный комплект USB Bridge заново.");
   return new HelperOverlayFiles(jar,script);
  }
  internal static void VerifyRemoteHashes(string output,string[] paths,string[] hashes){string[] lines=(output??"").Trim().Split('\n');if(lines.Length!=paths.Length||paths.Length!=hashes.Length)throw new IOException("Не удалось проверить файлы помощника на телефоне. Запуск остановлен до изменения системного доступа.");
@@ -123,7 +123,7 @@ public static class AdbHelper {
   // tolerates its optional settings grant failing; it grants no permission.
   VerifyRemoteHashes(Call(adb,run,alive,6000,"-s",serial,"shell","sha256sum",apk).Output,new string[]{apk},new string[]{OfficialManagerHash});
   Call(adb,run,alive,6000,"-s",serial,"shell","mkdir","-p","-m","700",OverlayDirectory);
-  string jar=OverlayDirectory+"/server.jar",script=OverlayDirectory+"/start-helper154.sh";
+  string jar=OverlayDirectory+"/server.jar",script=OverlayDirectory+"/start-helper157.sh";
   // Upload to new inodes, so a retry never truncates a read-only/running DEX.
   Call(adb,run,alive,15000,"-s",serial,"push",files.Jar,jar+".upload");
   Call(adb,run,alive,6000,"-s",serial,"push",files.Script,script+".upload");
@@ -147,14 +147,19 @@ public static class AdbHelper {
  }
  internal static bool ServerRedirected(){foreach(string name in new string[]{"ADB_SERVER_SOCKET","ANDROID_ADB_SERVER_ADDRESS","ANDROID_ADB_SERVER_PORT","ADB_SERVER_PORT"})if(!String.IsNullOrEmpty(Environment.GetEnvironmentVariable(name)))return true;return false;}
  internal static HelperProcessResult RunProcess(string executable,string[] arguments,int timeoutMs){return Run(executable,arguments,timeoutMs);}
- internal static string TryStartCable(HelperSessionAlive alive,TcpAdbCableTarget target,bool enabled,Action<string> progress){
-  return TryStartCable(LocateAdb(),Run,delegate{return CheckAdbPort(BundledServerPort);},alive,target,enabled,progress);
+ internal static string TryStartCable(HelperSessionAlive alive,TcpAdbCableTarget target,Action<string> progress){
+  return TryStartCable(LocateAdb(),Run,delegate{return CheckAdbPort(BundledServerPort);},alive,target,progress);
  }
- internal static string TryStartCable(HelperAdbLocation adb,HelperProcessRunner run,HelperAdbPortAvailable available,HelperSessionAlive alive,TcpAdbCableTarget target,bool enabled,Action<string> progress){
-  if(enabled&&!adb.Bundled&&ServerRedirected())return "Для режима рабочего ПК нужен локальный ADB без перенаправления сервера. Настройки существующего ADB не изменены.";
+ internal static string TryStartCable(HelperAdbLocation adb,HelperProcessRunner run,HelperAdbPortAvailable available,HelperSessionAlive alive,TcpAdbCableTarget target,Action<string> progress){
+  return TryStartCable(adb,run,available,alive,target,progress,delegate(TcpAdbCableTarget value,HelperSessionAlive current){return new TcpAdbForwarder(value,current);});
+ }
+ internal static string TryStartCable(HelperAdbLocation adb,HelperProcessRunner run,HelperAdbPortAvailable available,HelperSessionAlive alive,TcpAdbCableTarget target,Action<string> progress,TcpAdbForwarderFactory create){
+  // Automatic selection still requires a local SDK server. The isolated bundled
+  // client removes redirection only from its own child environment.
+  if(!adb.Bundled&&ServerRedirected())return "Для служебного доступа нужен локальный ADB без перенаправления сервера. Настройки существующего ADB не изменены.";
   string ordinary=TryStart(adb,run,alive,available);
-  if(enabled&&target==null&&ordinary.StartsWith(TcpAdbHelper.MissingUsb,StringComparison.Ordinal))return ordinary+" Подготовка для рабочего ПК действует только через USB-модем; через MIDI этот вариант не работает.";
-  return TcpAdbHelper.ShouldFallback(enabled,target,ordinary)?TcpAdbHelper.TryStart(adb,run,available,alive,target,progress):ordinary;
+  if(target==null&&ordinary.StartsWith(TcpAdbHelper.MissingUsb,StringComparison.Ordinal))return ordinary+" Для служебного доступа без ADB-драйвера выберите на телефоне «USB-модем». Через MIDI этот способ не работает.";
+  return TcpAdbHelper.ShouldFallback(target,ordinary)?TcpAdbHelper.TryStart(adb,run,available,alive,target,progress,45000,create):ordinary;
  }
  public static string TryStart(HelperSessionAlive alive){return TryStart(LocateAdb(),Run,alive,delegate{return CheckAdbPort(BundledServerPort);});}
  public static string TryStart(HelperAdbLocation adb,HelperProcessRunner run,HelperSessionAlive alive,HelperAdbPortAvailable available){

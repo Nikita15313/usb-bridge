@@ -8,7 +8,6 @@ import app.wireroute.RoutingMode;
 import app.wireroute.RoutingPreferences;
 import app.wireroute.SecureConfigStore;
 import app.wireroute.SessionDiagnostics;
-import app.wireroute.UsbConnectivityDiagnostics;
 import app.wireroute.WireRouteApplication;
 
 import com.wireguard.config.Config;
@@ -30,22 +29,21 @@ public final class ProfileDiagnostics {
 
     /** Reads the currently saved encrypted profile, not a possibly older native tunnel config. */
     public static String collect(Context context) {
-        String connectivity = UsbConnectivityDiagnostics.collect(context) + "\n";
         try {
             WireRouteApplication app = (WireRouteApplication) context.getApplicationContext();
             SecureConfigStore store = app.getConfigStore();
-            if (!store.hasConfig()) return connectivity + "profile=NOT_CONFIGURED";
+            if (!store.hasConfig()) return "profile=NOT_CONFIGURED";
             String raw = store.load();
-            if (raw == null) return connectivity + "profile=NOT_CONFIGURED";
+            if (raw == null) return "profile=NOT_CONFIGURED";
             RoutingPreferences routing = app.getRoutingPreferences();
             android.content.pm.PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             long versionCode = android.os.Build.VERSION.SDK_INT >= 28
                     ? packageInfo.getLongVersionCode() : packageInfo.versionCode;
-            return connectivity + "app_version_code=" + versionCode + "\n" + inspect(ConfigUtils.parse(raw), routing.getMode(),
+            return "app_version_code=" + versionCode + "\n" + inspect(ConfigUtils.parse(raw), routing.getMode(),
                     routing.getSelectedPackages(), context.getPackageName());
         } catch (Exception ignored) {
             // Parser and keystore exceptions can contain secret source lines: never print them.
-            return connectivity + "profile=UNAVAILABLE";
+            return "profile=UNAVAILABLE";
         }
     }
 

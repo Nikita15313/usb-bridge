@@ -1,0 +1,36 @@
+--- a/server/src/main/java/rikka/shizuku/server/ShizukuService.java
++++ b/server/src/main/java/rikka/shizuku/server/ShizukuService.java
+@@ -124,6 +124,7 @@
+         mainHandler.post(() -> {
+             sendBinderToClient();
+             sendBinderToManager();
++            sendBinderToUsbBridge();
+         });
+     }
+ 
+@@ -471,6 +472,25 @@
+         return super.onTransact(code, data, reply, flags);
+     }
+ 
++    private void sendBinderToUsbBridge() {
++        // Package enumeration may miss an already foreground client on some
++        // OEM builds. Deliver through the normal provider after startup too;
++        // this only attaches the client, whose existing permission checks stay.
++        final String packageName = "local.usbbridge";
++        final int userId = 0;
++        PackageInfo pi = PackageManagerApis.getPackageInfoNoThrow(packageName,
++                PackageManager.GET_PERMISSIONS, userId);
++        if (pi == null || !packageName.equals(pi.packageName)
++                || pi.requestedPermissions == null
++                || !ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
++            LOGGER.w("USB Bridge startup binder delivery skipped: API permission not declared");
++            return;
++        }
++        LOGGER.i("USB Bridge startup binder delivery to %s in user %d", packageName, userId);
++        // Do not force-stop the running Bridge if its provider is temporarily dead.
++        sendBinderToUserApp(this, packageName, userId, false);
++    }
++
+     void sendBinderToClient() {
+         for (int userId : UserManagerApis.getUserIdsNoThrow()) {
+             sendBinderToClient(this, userId);

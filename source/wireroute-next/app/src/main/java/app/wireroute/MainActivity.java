@@ -185,10 +185,12 @@ public final class MainActivity extends Activity implements TunnelController.Lis
     private void handleUsbIntent(Intent intent) {
         if (intent == null || !intent.getBooleanExtra("local.usbbridge.START_PLAIN", false)) return;
         intent.removeExtra("local.usbbridge.START_PLAIN");
-        if (!tunnelController.canStartPlainUsb() || UsbPlainVpnService.running) return;
-        if (UsbBridgeUnderlay.offeredRelaySession(this) == 0) {
+        long offeredSession = UsbBridgeUnderlay.offeredRelaySession(this);
+        if (offeredSession == 0) {
             toast("Сначала подключите компьютер в USB Bridge"); return;
         }
+        if (tunnelController.handoverSystemToUsb(offeredSession)) return;
+        if (!tunnelController.canStartPlainUsb() || UsbPlainVpnService.running) return;
         Intent permission = VpnService.prepare(this);
         if (permission == null) UsbPlainVpnService.startIfAvailable(this);
         else {

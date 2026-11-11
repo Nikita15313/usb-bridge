@@ -4,3 +4,5 @@
 *.so binary
 *.png binary
 *.pfx binary
+# Unified diffs use a single space to mark an empty context line.
+source/third-party/shizuku-helper/*.patch whitespace=-blank-at-eol
