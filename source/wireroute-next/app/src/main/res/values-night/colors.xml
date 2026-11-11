@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_button_text">#163626</color>
+    <color name="bg">#111C19</color>
+    <color name="bg_top">#15231E</color>
+    <color name="bg_bottom">#111C19</color>
+    <color name="card">#1B2C25</color>
+    <color name="card_high">#22372D</color>
+    <color name="card_pressed">#2B4236</color>
+    <color name="accent">#8FD1B0</color>
+    <color name="accent_strong">#71C29A</color>
+    <color name="accent_soft">#284D3A</color>
+    <color name="accent_faint">#20392C</color>
+    <color name="blue_soft">#223A41</color>
+    <color name="danger">#F49AA3</color>
+    <color name="text_primary">#ECF4EF</color>
+    <color name="text_secondary">#B2C5BA</color>
+    <color name="text_muted">#94A99B</color>
+    <color name="line">#405B4B</color>
+    <color name="line_soft">#314A3B</color>
+    <color name="transparent">#00000000</color>
+</resources>

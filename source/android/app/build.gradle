@@ -1,0 +1,19 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'local.usbbridge'
+    compileSdk 36
+    defaultConfig { applicationId 'local.usbbridge'; minSdk 33; targetSdk 35; versionCode 155; versionName '0.15.5'; testInstrumentationRunner 'android.test.InstrumentationTestRunner' }
+    buildFeatures { aidl true; buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+    packaging { jniLibs { useLegacyPackaging true } }
+}
+dependencies {
+ implementation 'dev.rikka.shizuku:api:13.1.5'
+ implementation 'dev.rikka.shizuku:provider:13.1.5'
+ androidTestCompileOnly files("${android.sdkDirectory}/platforms/android-36/optional/android.test.runner.jar", "${android.sdkDirectory}/platforms/android-36/optional/android.test.base.jar")
+}
+// AIDL 35 emits a Windows path containing \u in a Java comment; Java treats it as a Unicode escape.
+tasks.withType(JavaCompile).configureEach {
+ doFirst { fileTree(layout.buildDirectory.dir('generated/aidl_source_output_dir')).matching { include '**/*.java' }.each { f -> f.text = f.readLines().findAll { !it.contains('* Using:') }.join('\n') + '\n' } }
+}
+

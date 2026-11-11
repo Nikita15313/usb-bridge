@@ -1,0 +1,108 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WireRoute</string>
+    <string name="apps_title">Приложения</string>
+    <string name="open_menu">Открыть меню</string>
+    <string name="app_subtitle_compact">WireGuard по выбранным приложениям</string>
+    <string name="config_missing">Профиль не добавлен</string>
+    <string name="config_missing_details">Добавьте профиль, чтобы подключиться</string>
+    <string name="config_missing_details_compact">Импортируйте файл WireGuard .conf</string>
+    <string name="import_config">Добавить профиль</string>
+    <string name="import_config_compact">Импорт .conf</string>
+    <string name="replace_config">Добавить профиль</string>
+    <string name="mode_only_selected_compact">Через VPN: выбранные</string>
+    <string name="mode_bypass_selected_compact">Напрямую: выбранные</string>
+    <string name="mode_only_hint_compact">Выбранные идут через VPN, остальные — напрямую.</string>
+    <string name="mode_bypass_hint_compact">Выбранные идут напрямую, остальные — через VPN.</string>
+    <string name="mode_only_hint_short">Галочка = через VPN</string>
+    <string name="mode_bypass_hint_short">Галочка = без VPN</string>
+    <string name="mode_only_selected_simple">Галочка = через VPN</string>
+    <string name="mode_bypass_selected_simple">Галочка = без VPN</string>
+    <string name="drawer_main_section">Главное</string>
+    <string name="drawer_connection_section">Подключение</string>
+    <string name="drawer_checkmarks_section">Как работают галочки</string>
+    <string name="summary_title">Сводка</string>
+    <string name="summary_subtitle">Обзор, трафик, скорость и сеть</string>
+    <string name="mode_hint_count">%1$s · %2$d</string>
+    <string name="switching_to_apps">Восстанавливаем исходный профиль…</string>
+    <string name="recommended_title">Популярные приложения</string>
+    <string name="recommended_details_initial">Instagram, YouTube, X и другие · только установленные</string>
+    <string name="recommended_details">Instagram, YouTube, X и другие · найдено %1$d</string>
+    <string name="recommended_none">Из подборки пока ничего не установлено</string>
+    <string name="recommended_add">Выбрать</string>
+    <string name="recommended_remove">Снять</string>
+    <string name="recommended_disclaimer_compact">Галочка означает: всё приложение через VPN</string>
+    <string name="search_apps">Найти Chrome, Gemini или другое приложение</string>
+    <string name="clear_search">Очистить поиск</string>
+    <string name="filter_all">Все</string>
+    <string name="filter_recommended">Популярное</string>
+    <string name="filter_links">Ссылки</string>
+    <string name="filter_selected">Выбрано</string>
+    <string name="filter_all_count">Все · %1$d</string>
+    <string name="filter_recommended_count">Подборка · %1$d</string>
+    <string name="filter_links_count">Ссылки · %1$d</string>
+    <string name="filter_selected_count">Выбрано · %1$d</string>
+    <string name="selected_count">Отмечено: %1$d</string>
+    <string name="selected_count_initial">Выбрано: 0</string>
+    <string name="select_visible">Выбрать</string>
+    <string name="clear_visible">Снять</string>
+    <string name="apps_empty">Подходящие приложения не найдены</string>
+    <string name="apps_empty_search">В этом списке ничего не найдено. Проверьте фильтр и категорию.</string>
+    <string name="apps_empty_recommended">Установленных приложений из подборки пока нет</string>
+    <string name="apps_empty_links">Браузеры и приложения для ссылок не найдены</string>
+    <string name="apps_empty_selected">Вы пока ничего не выбрали</string>
+    <string name="apps_load_error">Не удалось получить список приложений</string>
+    <string name="status_off">VPN выключен</string>
+    <string name="status_connecting">Подключение…</string>
+    <string name="status_on">VPN включён</string>
+    <string name="status_disconnecting">Отключение…</string>
+    <string name="status_error">Ошибка подключения</string>
+    <string name="connect">Включить VPN</string>
+    <string name="add_config">Добавить профиль</string>
+    <string name="disconnect">Отключить VPN</string>
+    <string name="working">Подождите…</string>
+    <string name="route_summary_initial">Добавьте профиль подключения</string>
+    <plurals name="route_only_summary_count">
+        <item quantity="one">С VPN: %1$d приложение</item>
+        <item quantity="few">С VPN: %1$d приложения</item>
+        <item quantity="many">С VPN: %1$d приложений</item>
+        <item quantity="other">С VPN: %1$d приложений</item>
+    </plurals>
+    <plurals name="route_bypass_summary_count">
+        <item quantity="one">Напрямую: %1$d приложение · остальные через VPN</item>
+        <item quantity="few">Напрямую: %1$d приложения · остальные через VPN</item>
+        <item quantity="many">Напрямую: %1$d приложений · остальные через VPN</item>
+        <item quantity="other">Напрямую: %1$d приложения · остальные через VPN</item>
+    </plurals>
+    <string name="route_all_summary">Через VPN: все приложения</string>
+    <string name="vpn_badge">★</string>
+    <string name="link_badge">↗</string>
+    <string name="a11y_app_selected">%1$s, выбрано</string>
+    <string name="a11y_app_not_selected">%1$s, не выбрано</string>
+    <string name="permission_denied">Android не дал разрешение на создание VPN.</string>
+    <string name="select_one_required">Выберите хотя бы одно приложение «С VPN».</string>
+    <string name="config_read_error">Не удалось прочитать профиль.</string>
+    <string name="config_invalid">Не удалось прочитать параметры подключения. Проверьте файл профиля.</string>
+    <string name="config_too_large">Файл слишком большой. Максимальный размер — 256 КБ.</string>
+    <string name="config_saved">Профиль сохранён</string>
+    <string name="config_reading">Проверяем профиль…</string>
+    <string name="config_route_full">Полный маршрут: весь IPv4 и IPv6-трафик</string>
+    <string name="config_route_ipv4">Полный маршрут IPv4; IPv6 зависит от AllowedIPs</string>
+    <string name="config_route_ipv6">Полный маршрут IPv6; IPv4 зависит от AllowedIPs</string>
+    <string name="config_route_split">Маршрут только к сетям из AllowedIPs</string>
+    <plurals name="config_peers_count">
+        <item quantity="one">%1$d пир · %2$s</item>
+        <item quantity="few">%1$d пира · %2$s</item>
+        <item quantity="many">%1$d пиров · %2$s</item>
+        <item quantity="other">%1$d пира · %2$s</item>
+    </plurals>
+    <string name="error_no_config">Сначала добавьте профиль подключения.</string>
+    <string name="error_dns">Не удалось определить адрес VPN-сервера по DNS.</string>
+    <string name="error_vpn_busy">Android не смог создать VPN-интерфейс. Проверьте, не активен ли другой VPN.</string>
+    <string name="error_backend">Не удалось запустить VPN. Откройте диагностику.</string>
+    <string name="error_unknown">Не удалось подключить VPN.</string>
+    <string name="pending_changes_hint">Изменения сохранены. Применение один раз переподключит VPN.</string>
+    <string name="apply_changes">Применить</string>
+    <string name="cancel_connecting">Отмена</string>
+    <string name="previous_selection_active">Пока действует предыдущий выбор</string>
+</resources>

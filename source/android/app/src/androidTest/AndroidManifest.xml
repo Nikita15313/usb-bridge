@@ -1,0 +1,3 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <instrumentation android:name="local.usbbridge.UpdatePublishedFeedProbe" android:targetPackage="local.usbbridge" android:label="Published update feed verification"/>
+</manifest>

@@ -1,0 +1,5 @@
+package local.usbbridge;
+import android.content.Context;
+public class SystemProbe {
+ public static void main(String[] args)throws Exception{Class<?> at=Class.forName("android.app.ActivityThread");Object thread=at.getMethod("systemMain").invoke(null);Context ctx=((Context)at.getMethod("getSystemContext").invoke(thread)).createPackageContext("com.android.shell",0);System.out.println("UID="+android.os.Process.myUid()+" API="+android.os.Build.VERSION.SDK_INT);for(String p:new String[]{"MANAGE_TEST_NETWORKS","TETHER_PRIVILEGED","NETWORK_SETTINGS"})System.out.println(p+"="+ctx.checkSelfPermission("android.permission."+p));for(String name:new String[]{"test_network","tethering"}){try{Object m=ctx.getSystemService(name);System.out.println(name+"="+(m==null?"ABSENT":m.getClass().getName()));if(m!=null)for(java.lang.reflect.Method method:m.getClass().getMethods())if(method.getName().matches("createTunInterface|setupTestNetwork|setPreferTestNetworks|registerTetheringEventCallback|startTethering|stopTethering"))System.out.println(method.toString());}catch(Throwable e){e.printStackTrace(System.out);}}}
+}

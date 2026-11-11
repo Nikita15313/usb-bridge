@@ -1,0 +1,8 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'local.usbbridge.probe'
+ compileSdk 36
+ defaultConfig { applicationId project.findProperty('probeApplicationId') ?: 'local.usbbridge.probe'; minSdk 33; targetSdk 35; versionCode 1; versionName '1'; manifestPlaceholders = [probeLabel: project.findProperty('probeLabel') ?: 'Bridge Test'] }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+ sourceSets.main.java.srcDirs = ['src/main/java']
+}

@@ -1,0 +1,13 @@
+--- a/server/src/main/java/rikka/shizuku/server/ShizukuService.java
++++ b/server/src/main/java/rikka/shizuku/server/ShizukuService.java
+@@ -241,7 +241,9 @@
+             try {
+                 PermissionManagerApis.grantRuntimePermission(MANAGER_APPLICATION_ID,
+                         WRITE_SECURE_SETTINGS, UserHandleCompat.getUserId(callingUid));
+-            } catch (RemoteException e) {
++            } catch (RemoteException | SecurityException e) {
++                // Optional convenience grant may be blocked by the OEM.
++                // Keep manager attachment available; no permission is bypassed.
+                 LOGGER.w(e, "grant WRITE_SECURE_SETTINGS");
+             }
+         }

@@ -1,0 +1,10 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'local.usbbridge.vpnprobe'
+ compileSdk 36
+ defaultConfig { applicationId 'local.usbbridge.vpnprobe'; minSdk 33; targetSdk 35; versionCode 1; versionName '1' }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+ sourceSets.main.java.srcDirs = ['../../tests/vpnprobe']
+ sourceSets.main.jniLibs.srcDirs = ['../app/src/main/jniLibs']
+ packaging { jniLibs { useLegacyPackaging true } }
+}

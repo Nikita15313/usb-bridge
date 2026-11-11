@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Per-app VPN routing is the app's core feature and requires the complete
+         current-user package inventory on Android 11 and newer. -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Granted only through Android's explicit "Usage access" screen (AppOps). -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <queries>
+        <provider android:authorities="local.usbbridge.underlay"/>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tg" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+        <package android:name="org.telegram.messenger" />
+        <package android:name="org.telegram.messenger.web" />
+        <package android:name="org.telegram.messenger.beta" />
+        <package android:name="org.thunderdog.challegram" />
+    </queries>
+
+    <application
+        android:name="app.wireroute.WireRouteApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.WireRoute"
+        android:usesCleartextTraffic="false">
+
+        <meta-data android:name="local.usbbridge.UNDERLAY_API" android:value="1"/>
+        <meta-data android:name="local.usbbridge.UDP_RELAY_API" android:value="1"/>
+        <meta-data android:name="local.usbbridge.PLAIN_START_API" android:value="1"/>
+        <receiver android:name="app.wireroute.UsbBootstrapReceiver" android:exported="true">
+            <intent-filter><action android:name="local.usbbridge.START_PLAIN" /></intent-filter>
+        </receiver>
+        <activity
+            android:name="app.wireroute.MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="app.wireroute.diagnostics.DiagnosticsActivity"
+            android:exported="false"
+            android:label="Сводка" />
+
+        <service
+            android:name="com.wireguard.android.backend.GoBackend$VpnService"
+            tools:node="remove" />
+
+        <service
+            android:name="app.wireroute.StableVpnService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="wireguard_vpn_connection" />
+            <meta-data
+                android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                android:value="false" />
+        </service>
+
+        <service android:name="app.wireroute.UsbPlainVpnService"
+            android:exported="false" android:foregroundServiceType="specialUse"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter><action android:name="android.net.VpnService" /></intent-filter>
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="USB internet with optional WireGuard encryption" />
+            <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON" android:value="false" />
+        </service>
+
+    </application>
+
+</manifest>
