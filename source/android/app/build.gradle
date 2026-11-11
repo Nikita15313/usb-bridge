@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
     namespace 'local.usbbridge'
     compileSdk 36
-    defaultConfig { applicationId 'local.usbbridge'; minSdk 33; targetSdk 35; versionCode 155; versionName '0.15.5'; testInstrumentationRunner 'android.test.InstrumentationTestRunner' }
+    defaultConfig { applicationId 'local.usbbridge'; minSdk 33; targetSdk 35; versionCode 158; versionName '0.15.8'; testInstrumentationRunner 'android.test.InstrumentationTestRunner' }
     buildFeatures { aidl true; buildConfig true }
     compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
     packaging { jniLibs { useLegacyPackaging true } }

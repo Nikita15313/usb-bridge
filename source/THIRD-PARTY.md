@@ -1,6 +1,6 @@
 # Third-party components
 
-USB Bridge 0.15.7, November 2026. Upstream copyright notices and full licenses are retained in `licenses/` and in the vendored source directories.
+USB Bridge 0.15.8, November 2026. Upstream copyright notices and full licenses are retained in `licenses/` and in the vendored source directories.
 
 | Component | Version / commit | License / upstream |
 |---|---|---|
@@ -37,4 +37,4 @@ in platform-tools28.0.2. The bundle does not install drivers or change Windows
 security settings. It uses a separate local ADB server endpoint. Existing ADB
 installations are preferred on all Windows versions; their files are never replaced.
 
-USB Bridge helper157 is a modified source-built Shizuku compatibility server, not an official Shizuku release. The installed official manager APK remains unchanged. An optional OEM-denied WRITE_SECURE_SETTINGS convenience grant no longer aborts manager attachment. Startup also delivers Binder to the declared USB Bridge client through the unchanged upstream access checks; no denied permission is granted or bypassed. Pinned sources, patches, build support and Apache-2.0 licenses are in source/third-party/shizuku-helper and, in the Windows package, licenses/helper157/. Runtime files are helper/server.jar and helper/start-helper157.sh.
+USB Bridge helper157 is a modified source-built Shizuku compatibility server, not an official Shizuku release. The installed official manager APK remains unchanged. An optional OEM-denied WRITE_SECURE_SETTINGS convenience grant no longer aborts manager attachment. Startup also delivers Binder to the declared USB Bridge client through the unchanged upstream access checks; no denied permission is granted or bypassed. Pinned sources, patches, build support and Apache-2.0/MIT licenses are in source/third-party/shizuku-helper and, in the Windows package, licenses/helper157/. Runtime files are helper/server.jar and helper/start-helper157.sh.

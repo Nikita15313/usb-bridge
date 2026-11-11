@@ -3,9 +3,11 @@ package local.usbbridge;
 import android.app.*;
 import android.content.*;
 import android.content.pm.*;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.*;
 import android.os.*;
 import android.provider.Settings;
@@ -15,18 +17,23 @@ import java.util.*;
 import rikka.shizuku.Shizuku;
 
 public class MainActivity extends Activity {
- final int ink=Color.rgb(22,43,39),green=Color.rgb(20,112,91),muted=Color.rgb(88,107,102),bg=Color.rgb(244,247,242),pale=Color.rgb(229,243,236),good=Color.rgb(22,124,91),warn=Color.rgb(171,86,19);
+ final int ink=Color.rgb(21,36,66),green=Color.rgb(47,102,255),muted=Color.rgb(124,141,169),bg=Color.rgb(245,247,252),pale=Color.rgb(237,243,255),good=Color.rgb(22,155,119),warn=Color.rgb(173,100,27);
  LinearLayout root;TextView status,detail,proof,traffic,wifi,wifiClients,helper,vpnDetail,sharingHint,updateMessage;Button updateButton;
  final UpdateManager.Listener updateListener=()->refreshUpdate();
  final TrafficRate trafficRate=new TrafficRate();Button start,checkNow,share,setup,openVpn,shareDirect,shareVpn;Handler timer=new Handler(Looper.getMainLooper());boolean consentToStart,pendingShare,pendingPlain,helperPermissionInFlight,resumed,helperHintShown,compatibilityPermissionAsked;
 
  int dp(int value){return (int)(getResources().getDisplayMetrics().density*value+.5f);}
- TextView text(String value,int size,int color,boolean bold){TextView view=new TextView(this);view.setText(value);view.setTextSize(size);view.setTextColor(color);view.setLineSpacing(0,1.08f);if(bold)view.setTypeface(null,Typeface.BOLD);view.setPadding(0,dp(4),0,dp(4));return view;}
+ TextView text(String value,int size,int color,boolean bold){TextView view=new TextView(this);view.setText(value);view.setTextSize(size);view.setTextColor(color);view.setLineSpacing(0,1.1f);view.setTypeface(Typeface.create(bold?"sans-serif-medium":"sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));view.setPadding(0,dp(4),0,dp(4));return view;}
  GradientDrawable background(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
  GradientDrawable outlined(int color,int radius,int stroke){GradientDrawable d=background(color,radius);d.setStroke(dp(1),stroke);return d;}
- LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(20),dp(17),dp(20),dp(18));c.setBackground(background(Color.WHITE,22));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(14);root.addView(c,p);return c;}
- TextView pill(LinearLayout parent,String value){TextView view=text(value,14,green,true);view.setGravity(Gravity.CENTER_VERTICAL);view.setPadding(dp(13),dp(9),dp(13),dp(9));view.setBackground(background(pale,12));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(10);parent.addView(view,p);return view;}
- Button button(LinearLayout parent,String value,boolean primary,Runnable action){Button b=new Button(this);b.setText(value);b.setAllCaps(false);b.setTextSize(16);b.setTypeface(null,primary?Typeface.BOLD:Typeface.NORMAL);b.setTextColor(primary?Color.WHITE:green);b.setGravity(Gravity.CENTER);b.setPadding(dp(12),0,dp(12),0);b.setMinHeight(0);b.setMinWidth(0);b.setStateListAnimator(null);b.setBackground(primary?background(green,15):outlined(Color.rgb(238,247,242),15,Color.rgb(216,232,224)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(56));p.topMargin=dp(10);parent.addView(b,p);b.setOnClickListener(v->action.run());return b;}
+ LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(20),dp(20),dp(20),dp(20));c.setBackground(outlined(Color.WHITE,24,Color.rgb(228,234,246)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(16);root.addView(c,p);return c;}
+ TextView pill(LinearLayout parent,String value){TextView view=text(value,13,green,true);view.setGravity(Gravity.CENTER_VERTICAL);view.setPadding(dp(13),dp(9),dp(13),dp(9));view.setBackground(background(pale,12));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(12);parent.addView(view,p);return view;}
+ Button button(LinearLayout parent,String value,boolean primary,Runnable action){Button b=new Button(this);b.setText(value);b.setAllCaps(false);b.setTextSize(15);b.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));b.setTextColor(primary?Color.WHITE:green);b.setGravity(Gravity.CENTER);b.setPadding(dp(14),dp(8),dp(14),dp(8));b.setMinHeight(dp(56));b.setMinimumHeight(dp(56));b.setMinWidth(0);b.setStateListAnimator(null);GradientDrawable fill=primary?background(green,15):outlined(Color.rgb(248,250,255),15,Color.rgb(221,230,249));b.setBackground(new RippleDrawable(ColorStateList.valueOf(primary?Color.rgb(103,143,255):Color.rgb(220,231,255)),fill,background(Color.WHITE,15)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(12);parent.addView(b,p);b.setOnClickListener(v->action.run());return b;}
+ void sectionHeading(LinearLayout parent,String title,String subtitle,int icon){
+  LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);parent.addView(row,new LinearLayout.LayoutParams(-1,-2));
+  ImageView mark=new ImageView(this);mark.setImageResource(icon);mark.setBackground(background(pale,13));mark.setPadding(dp(10),dp(10),dp(10),dp(10));row.addView(mark,new LinearLayout.LayoutParams(dp(42),dp(42)));
+  LinearLayout labels=new LinearLayout(this);labels.setOrientation(LinearLayout.VERTICAL);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.leftMargin=dp(12);row.addView(labels,lp);labels.addView(text(title,19,ink,true));if(!subtitle.isEmpty())labels.addView(text(subtitle,12,muted,false));
+ }
 
  @Override public void onCreate(Bundle saved){
   super.onCreate(saved);HelperAccess.observe(this);
@@ -34,40 +41,47 @@ public class MainActivity extends Activity {
   pendingPlain=saved!=null&&saved.getBoolean("pendingPlain")&&BridgeService.instance!=null;
   consentToStart=saved!=null&&saved.getBoolean("consentToStart");
   getWindow().setDecorFitsSystemWindows(false);getWindow().setStatusBarColor(Color.TRANSPARENT);getWindow().setNavigationBarColor(Color.TRANSPARENT);getWindow().setStatusBarContrastEnforced(false);getWindow().setNavigationBarContrastEnforced(false);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-  ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setClipToPadding(false);scroll.setBackgroundColor(bg);
-  root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(bg);scroll.addView(root,new ScrollView.LayoutParams(-1,-2));setContentView(scroll);
-  scroll.setOnApplyWindowInsetsListener((view,insets)->{android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars());root.setPadding(dp(20),bars.top+dp(24),dp(20),bars.bottom+dp(24));return insets;});scroll.requestApplyInsets();
+  ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setClipToPadding(true);scroll.setBackgroundColor(bg);scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+  root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(bg);scroll.addView(root,new ScrollView.LayoutParams(-1,-2));FrameLayout safeArea=new FrameLayout(this);safeArea.setBackgroundColor(bg);safeArea.addView(scroll,new FrameLayout.LayoutParams(-1,-1));setContentView(safeArea);root.setPadding(dp(20),dp(22),dp(20),dp(24));
+  safeArea.setOnApplyWindowInsetsListener((view,insets)->{android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());FrameLayout.LayoutParams area=(FrameLayout.LayoutParams)scroll.getLayoutParams();if(area.leftMargin!=bars.left||area.topMargin!=bars.top||area.rightMargin!=bars.right||area.bottomMargin!=bars.bottom){area.setMargins(bars.left,bars.top,bars.right,bars.bottom);scroll.setLayoutParams(area);}return WindowInsets.CONSUMED;});safeArea.requestApplyInsets();
 
-  root.addView(text("USB Bridge",32,ink,true));root.addView(text("Компьютер  →  телефон  →  Wi-Fi",16,muted,false));
+  LinearLayout brand=new LinearLayout(this);brand.setGravity(Gravity.CENTER_VERTICAL);brand.setMinimumHeight(dp(64));root.addView(brand,new LinearLayout.LayoutParams(-1,-2));
+  ImageView appMark=new ImageView(this);appMark.setImageResource(R.drawable.ic_app_mark);appMark.setContentDescription("USB Bridge");brand.addView(appMark,new LinearLayout.LayoutParams(dp(48),dp(48)));
+  LinearLayout brandLabels=new LinearLayout(this);brandLabels.setOrientation(LinearLayout.VERTICAL);LinearLayout.LayoutParams brandParams=new LinearLayout.LayoutParams(0,-2,1);brandParams.leftMargin=dp(14);brand.addView(brandLabels,brandParams);brandLabels.addView(text("USB Bridge",25,ink,true));brandLabels.addView(text("Просто. По кабелю.",13,muted,false));
+  TextView caption=text("ПОДКЛЮЧЕНИЕ",11,Color.rgb(88,127,222),true);caption.setLetterSpacing(.15f);LinearLayout.LayoutParams captionParams=new LinearLayout.LayoutParams(-1,-2);captionParams.topMargin=dp(24);root.addView(caption,captionParams);
+  root.addView(text("Интернет с компьютера",25,ink,true));root.addView(text("Телефон и другие устройства — через один кабель.",14,muted,false));
 
-  LinearLayout internet=card();internet.addView(text("Интернет с компьютера",14,muted,true));status=text("Подключите телефон кабелем",24,ink,true);internet.addView(status);proof=pill(internet,"○ Источник ещё не проверен");proof.setOnClickListener(v->sourceInfo());detail=text("1. Включите USB-модем; если он недоступен — MIDI.\n2. Откройте программу на компьютере.\n3. Нажмите «Подключить» на обоих устройствах.",15,muted,false);LinearLayout.LayoutParams detailParams=new LinearLayout.LayoutParams(-1,-2);detailParams.topMargin=dp(7);internet.addView(detail,detailParams);traffic=text("",17,green,true);internet.addView(traffic);
+  LinearLayout internet=card();GradientDrawable hero=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{Color.rgb(233,240,255),Color.rgb(251,252,255)});hero.setCornerRadius(dp(24));hero.setStroke(dp(1),Color.rgb(216,228,255));internet.setBackground(hero);
+  status=text("Телефон пока не подключён",24,ink,true);internet.addView(status);proof=pill(internet,"○ Ждём подключения");proof.setOnClickListener(v->sourceInfo());
+  detail=text("1. Включите USB-модем; если он недоступен — MIDI.\n2. Откройте программу на компьютере.\n3. Нажмите «Подключить» на обоих устройствах.",14,muted,false);LinearLayout.LayoutParams detailParams=new LinearLayout.LayoutParams(-1,-2);detailParams.topMargin=dp(12);internet.addView(detail,detailParams);
+  traffic=text("",17,green,true);traffic.setPadding(0,dp(12),0,dp(4));internet.addView(traffic);
   start=button(internet,"Подключить",true,this::connect);checkNow=button(internet,"Проверить интернет",false,this::verifyNow);
 
-  LinearLayout hotspot=card();hotspot.addView(text("Раздать Wi-Fi",21,ink,true));wifi=text("После подключения другие устройства увидят имя сети и введут пароль. Устанавливать на них APK не нужно.",15,muted,false);hotspot.addView(wifi);wifiClients=text("",14,muted,false);hotspot.addView(wifiClients);helper=pill(hotspot,"Системный доступ проверяется…");
-  share=button(hotspot,"Включить точку Wi-Fi",true,this::requestShare);
-  hotspot.addView(text("Интернет для подключённых устройств",14,muted,true));
+  LinearLayout hotspot=card();sectionHeading(hotspot,"Раздать Wi-Fi","Для других устройств",R.drawable.ic_wifi);wifi=text("Другие устройства подключатся по имени сети и паролю.",14,muted,false);LinearLayout.LayoutParams wifiParams=new LinearLayout.LayoutParams(-1,-2);wifiParams.topMargin=dp(12);hotspot.addView(wifi,wifiParams);wifiClients=text("",13,muted,false);hotspot.addView(wifiClients);helper=pill(hotspot,"Системный доступ проверяется…");
+  share=button(hotspot,"Включить Wi-Fi",true,this::requestShare);
+  TextView modeLabel=text("Интернет для подключённых устройств",13,muted,true);LinearLayout.LayoutParams modeLabelParams=new LinearLayout.LayoutParams(-1,-2);modeLabelParams.topMargin=dp(14);hotspot.addView(modeLabel,modeLabelParams);
   LinearLayout modes=new LinearLayout(this);modes.setOrientation(LinearLayout.HORIZONTAL);hotspot.addView(modes,new LinearLayout.LayoutParams(-1,-2));
   shareDirect=modeButton(modes,"Без VPN",()->selectSharingMode(SharePolicy.DIRECT),false);
   shareVpn=modeButton(modes,"Через VPN",()->selectSharingMode(SharePolicy.VPN),true);
-  sharingHint=text("",13,muted,false);hotspot.addView(sharingHint);
-  button(hotspot,"Изменить имя сети и пароль",false,this::wifiSettings);setup=button(hotspot,"Настроить системный доступ",false,this::prepareHelper);
+  sharingHint=text("",12,muted,false);hotspot.addView(sharingHint);
+  button(hotspot,"Имя сети и пароль",false,this::wifiSettings);setup=button(hotspot,"Настроить системный доступ",false,this::prepareHelper);
 
-  LinearLayout vpn=card();vpn.addView(text("VPN на телефоне",21,ink,true));vpnDetail=text("",14,muted,false);vpn.addView(vpnDetail);button(vpn,"Выбрать VPN",false,this::chooseVpn);openVpn=button(vpn,"Открыть WireRoute",false,this::launchVpn);
+  LinearLayout vpn=card();sectionHeading(vpn,"VPN на телефоне","Ваши приложения и сайты",R.drawable.ic_shield);vpnDetail=text("",14,muted,false);LinearLayout.LayoutParams vpnParams=new LinearLayout.LayoutParams(-1,-2);vpnParams.topMargin=dp(12);vpn.addView(vpnDetail,vpnParams);openVpn=button(vpn,"Открыть WireRoute",true,this::launchVpn);button(vpn,"Выбрать VPN",false,this::chooseVpn);
 
-  button(root,"Как пользоваться",false,this::help);button(root,"Диагностика",false,this::diagnostics);
-  updateMessage=text("",14,green,false);root.addView(updateMessage);updateButton=button(root,"Проверить обновления",false,()->UpdateManager.get(this).act(this));
-  root.addView(text("Версия "+BuildConfig.VERSION_NAME,12,muted,false));
+  LinearLayout assistance=card();sectionHeading(assistance,"Помощь","Всё нужное под рукой",R.drawable.ic_help);button(assistance,"Как пользоваться",false,this::help);button(assistance,"Диагностика",false,this::diagnostics);
+  LinearLayout updateCard=card();sectionHeading(updateCard,"Обновления","Новые версии приложения",R.drawable.ic_refresh);updateMessage=text("",14,muted,false);LinearLayout.LayoutParams updateParams=new LinearLayout.LayoutParams(-1,-2);updateParams.topMargin=dp(10);updateCard.addView(updateMessage,updateParams);updateButton=button(updateCard,"Проверить обновления",false,()->UpdateManager.get(this).act(this));
+  TextView version=text("USB Bridge · "+BuildConfig.VERSION_NAME,12,muted,false);version.setGravity(Gravity.CENTER);LinearLayout.LayoutParams versionParams=new LinearLayout.LayoutParams(-1,-2);versionParams.topMargin=dp(20);root.addView(version,versionParams);
   Shizuku.addRequestPermissionResultListener(permissionResult);if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},1);
   traffic.setFontFeatureSettings("tnum");traffic.setMinLines(2);
  }
 
  Button modeButton(LinearLayout parent,String label,Runnable action,boolean gap){
-  Button b=new Button(this);b.setAllCaps(false);b.setTextSize(15);b.setText(label);b.setMinWidth(0);b.setMinHeight(0);b.setPadding(dp(6),0,dp(6),0);b.setStateListAnimator(null);
+  Button b=new Button(this);b.setAllCaps(false);b.setTextSize(14);b.setText(label);b.setMinWidth(0);b.setMinHeight(0);b.setPadding(dp(6),0,dp(6),0);b.setStateListAnimator(null);
   LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(50),1);p.topMargin=dp(6);if(gap)p.leftMargin=dp(8);parent.addView(b,p);b.setOnClickListener(v->action.run());return b;
  }
  void modeStyle(Button b,String label,boolean selected,boolean enabled){
   int key=(selected?1:0)+(enabled?2:0);if(b.getTag() instanceof Integer&&((Integer)b.getTag())==key)return;b.setTag(key);
-  b.setText((selected?"✓ ":"")+label);b.setSelected(selected);b.setEnabled(enabled);b.setAlpha(enabled?1f:.45f);b.setTypeface(null,selected?Typeface.BOLD:Typeface.NORMAL);b.setTextColor(selected?Color.WHITE:green);b.setBackground(selected?background(green,14):outlined(pale,14,Color.rgb(207,225,217)));b.setContentDescription(label+(selected?", выбран":"")+(!enabled?", включите VPN на телефоне":""));
+  b.setText((selected?"✓ ":"")+label);b.setSelected(selected);b.setEnabled(enabled);b.setAlpha(enabled?1f:.45f);b.setTypeface(null,selected?Typeface.BOLD:Typeface.NORMAL);b.setTextColor(selected?Color.WHITE:green);b.setBackground(selected?background(green,14):outlined(Color.rgb(248,250,255),14,Color.rgb(217,228,250)));b.setContentDescription(label+(selected?", выбран":"")+(!enabled?", включите VPN на телефоне":""));
  }
  void selectSharingMode(String mode){
   if(SharePolicy.VPN.equals(mode)&&!BridgeService.encryptedReady())return;
@@ -176,9 +190,9 @@ public class MainActivity extends Activity {
  final Runnable refresh=new Runnable(){public void run(){
   continuePendingShare();continuePendingPlain();if(resumed&&!compatibilityPermissionAsked&&BridgeService.connected&&BridgeService.relayVpn(MainActivity.this)&&BridgeService.helperState(MainActivity.this)==BridgeService.HELPER_PERMISSION){compatibilityPermissionAsked=true;requestHelperPermission();}
   value(status,BridgeService.headline(MainActivity.this));value(start,BridgeService.instance==null?"Подключить":"Остановить");
-  if(BridgeService.instance==null){value(proof,"○ Источник ещё не проверен");pillStyle(proof,0,muted,Color.rgb(238,242,238));value(detail,"1. Включите USB-модем; если он недоступен — MIDI.\n2. Откройте программу на компьютере.\n3. Нажмите «Подключить» на обоих устройствах.");}
-  else if(!BridgeService.connected){value(proof,"○ Ждём компьютер по кабелю");pillStyle(proof,0,muted,Color.rgb(238,242,238));value(detail,"На компьютере нажмите «Подключить». USB-модем используется первым; MIDI — если он недоступен.");}
-  else if(BridgeService.verified){boolean fresh=BridgeService.probeFailures==0;value(proof,fresh?"✓ Проверочный сайт ответил через ПК":"● Повторяем проверку интернета");pillStyle(proof,fresh?1:4,fresh?good:green,fresh?Color.rgb(225,244,235):pale);String readiness=BridgeService.appNetworkReady()?"":"\nСистемная сеть Android пока не готова. Часть приложений может не видеть интернет.";value(detail,"Подключение: "+BridgeService.channelLabel()+"\nИсточник: "+(BridgeService.source.isEmpty()?"текущее подключение компьютера":BridgeService.source)+readiness);}
+  if(BridgeService.instance==null){value(proof,"○ Источник ещё не проверен");pillStyle(proof,0,muted,Color.rgb(239,243,251));value(detail,"1. Включите USB-модем; если он недоступен — MIDI.\n2. Откройте программу на компьютере.\n3. Нажмите «Подключить» на обоих устройствах.");}
+  else if(!BridgeService.connected){value(proof,"○ Ждём компьютер по кабелю");pillStyle(proof,0,muted,Color.rgb(239,243,251));value(detail,"На компьютере нажмите «Подключить». USB-модем используется первым; MIDI — если он недоступен.");}
+  else if(BridgeService.verified){boolean fresh=BridgeService.probeFailures==0;value(proof,fresh?"✓ Проверочный сайт ответил через ПК":"● Повторяем проверку интернета");pillStyle(proof,fresh?1:4,fresh?good:green,fresh?Color.rgb(228,246,239):pale);String readiness=BridgeService.appNetworkReady()?"":"\nСистемная сеть Android пока не готова. Часть приложений может не видеть интернет.";value(detail,"Подключение: "+BridgeService.channelLabel()+"\nИсточник: "+(BridgeService.source.isEmpty()?"текущее подключение компьютера":BridgeService.source)+readiness);}
   else{value(proof,BridgeService.checking?"● Проверяем источник…":"! Интернет ПК не подтверждён");pillStyle(proof,BridgeService.checking?2:3,BridgeService.checking?green:warn,BridgeService.checking?pale:Color.rgb(255,239,222));value(detail,BridgeService.checking?"Проверяем доступ к интернету…":"Откройте сайт на компьютере и нажмите «Проверить интернет».");}
   visible(checkNow,BridgeService.connected?View.VISIBLE:View.GONE);
   HotspotDisplay hotspot=HotspotDisplay.parse(BridgeService.routerState,BridgeService.shareWanted);
@@ -186,7 +200,7 @@ public class MainActivity extends Activity {
   value(wifiClients,hotspot.clients);visible(wifiClients,hotspot.clients.isEmpty()?View.GONE:View.VISIBLE);
   value(share,pendingShare?"Отменить включение":BridgeService.shareWanted||hotspot.owned?"Выключить Wi-Fi":"Включить Wi-Fi");
   refreshSharingModes();
-  int helperState=BridgeService.helperState(MainActivity.this);value(helper,helperText(helperState));boolean helperGood=helperState==BridgeService.HELPER_READY&&BridgeService.helperIssue.isEmpty();boolean helperBad=helperState==BridgeService.HELPER_LIMITED||helperState==BridgeService.HELPER_ERROR||!BridgeService.helperIssue.isEmpty();pillStyle(helper,helperGood?10:helperBad?11:12,helperGood?good:helperBad?warn:green,helperGood?Color.rgb(225,244,235):helperBad?Color.rgb(255,239,222):pale);visible(setup,helperGood?View.GONE:View.VISIBLE);value(setup,helperState==BridgeService.HELPER_ERROR?"Повторить проверку":helperBad?"Проверить права Android":helperState==BridgeService.HELPER_UNAVAILABLE?"Проверить системный доступ":"Настроить системный доступ");
+  int helperState=BridgeService.helperState(MainActivity.this);value(helper,helperText(helperState));boolean helperGood=helperState==BridgeService.HELPER_READY&&BridgeService.helperIssue.isEmpty();boolean helperBad=helperState==BridgeService.HELPER_LIMITED||helperState==BridgeService.HELPER_ERROR||!BridgeService.helperIssue.isEmpty();pillStyle(helper,helperGood?10:helperBad?11:12,helperGood?good:helperBad?warn:green,helperGood?Color.rgb(228,246,239):helperBad?Color.rgb(255,239,222):pale);visible(setup,helperGood?View.GONE:View.VISIBLE);value(setup,helperState==BridgeService.HELPER_ERROR?"Повторить проверку":helperBad?"Проверить права Android":helperState==BridgeService.HELPER_UNAVAILABLE?"Проверить системный доступ":"Настроить системный доступ");
   boolean own=!BridgeService.selectedVpn(MainActivity.this).isEmpty();String label=getSharedPreferences("bridge",0).getString("vpnLabel","WireRoute");if(own){value(vpnDetail,vpnState());value(openVpn,"Открыть "+label);}else value(vpnDetail,"VPN выключен.");visible(openVpn,own?View.VISIBLE:View.GONE);
   timer.postDelayed(this,1000);
  }};

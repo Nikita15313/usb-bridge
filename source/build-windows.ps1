@@ -16,13 +16,14 @@ if(-not(Test-Path -LiteralPath $bridgeCompiler -PathType Leaf)){throw "C# compil
 $bridgeWindowsDirectory=Join-Path $bridgeSourceDirectory 'windows'
 $bridgeManifest=Join-Path $bridgeWindowsDirectory 'app.manifest'
 $bridgeConfig=Join-Path $bridgeWindowsDirectory 'USBBridge.exe.config'
-foreach($bridgeRequiredFile in @($bridgeManifest,$bridgeConfig)){if(-not(Test-Path -LiteralPath $bridgeRequiredFile -PathType Leaf)){throw "Required source file not found: $bridgeRequiredFile. Use a complete source checkout."}}
+$bridgeBrandIcon=Join-Path $bridgeSourceDirectory 'branding\usbbridge.ico'
+foreach($bridgeRequiredFile in @($bridgeManifest,$bridgeConfig,$bridgeBrandIcon)){if(-not(Test-Path -LiteralPath $bridgeRequiredFile -PathType Leaf)){throw "Required source file not found: $bridgeRequiredFile. Use a complete source checkout."}}
 $bridgeSources=@(Get-ChildItem -LiteralPath $bridgeWindowsDirectory -Filter '*.cs' | Sort-Object Name | ForEach-Object FullName)
 if($bridgeSources.Count -eq 0){throw "No C# sources found in $bridgeWindowsDirectory. Use a complete source checkout."}
 $bridgeOutputDirectory=(New-Item -ItemType Directory -Path $OutputDirectory -Force).FullName
 $bridgeExe=Join-Path $bridgeOutputDirectory 'USBBridge.exe'
 $bridgeReferenceArguments=@($bridgeReferenceNames | ForEach-Object {"/r:$(Join-Path $Net35References $_)"})
-& $bridgeCompiler /nologo /noconfig /codepage:65001 /target:winexe /platform:x86 /optimize+ /nostdlib+ "/win32manifest:$bridgeManifest" "/out:$bridgeExe" $bridgeReferenceArguments $bridgeSources
+& $bridgeCompiler /nologo /noconfig /codepage:65001 /target:winexe /platform:x86 /optimize+ /nostdlib+ "/win32manifest:$bridgeManifest" "/win32icon:$bridgeBrandIcon" "/resource:$bridgeBrandIcon,UsbBridge.BrandIcon" "/out:$bridgeExe" $bridgeReferenceArguments $bridgeSources
 if($LASTEXITCODE -ne 0){throw "Windows compilation failed (exit code $LASTEXITCODE). Review the compiler errors above."}
 Copy-Item -LiteralPath $bridgeConfig -Destination (Join-Path $bridgeOutputDirectory 'USBBridge.exe.config') -Force
 Write-Output "Windows build complete: $bridgeExe"
