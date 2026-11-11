@@ -22,8 +22,8 @@ internal sealed class UpdateRelease {
  internal long Sequence;internal int Code;internal string Name,Url,Sha256;internal long Size;internal byte[] Envelope;
 }
 internal static class UpdateManifest {
- internal const int CurrentCode=155;
- internal const string CurrentName="0.15.5";
+ internal const int CurrentCode=156;
+ internal const string CurrentName="0.15.6";
  internal const string ManifestUrl="https://raw.githubusercontent.com/Nikita15313/usb-bridge/main/updates/stable.json";
  // Pinned release signing public key. The private key is never included in a build.
  internal const string PublicModulus="9bWzueaRQCdpiSU9DixIBNCCTnDkjM05tDjaTE8VNJefhCVhcVcOF4Jzbi9ig5u1thAXyQtGtWbsbjeXaQ4HBdiiwZ+CPtDj1FeiRBTCdoVh+HHyD5OYQy1hmRbVzFwYV6i3auhqkZAKWJ5XflmDaRIh8pXMuHnxRk7pOBkb14p6kptfHabk1syGNBpemzSI8bhtYHvWTK3umKJXMLRHi32Mk24DPOd6oIaYzy9d+kQSHMZUBGXBgLNSBmAiq4LYY/h5X2rJ1En9Cvkvy9+9aqOSQ69qqn9ICStXXtc5TyqS+zuE8xmqvU5cBLeg+DWZ681P2gW9qKoXXBE2cvWxmQ==";

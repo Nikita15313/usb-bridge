@@ -4,5 +4,5 @@ using System.Reflection;
 [assembly: AssemblyDescription("Internet from a Windows PC to Android over USB")]
 [assembly: AssemblyCompany("USB Bridge")]
 [assembly: AssemblyProduct("USB Bridge")]
-[assembly: AssemblyVersion("0.15.5.0")]
-[assembly: AssemblyFileVersion("0.15.5.0")]
+[assembly: AssemblyVersion("0.15.6.0")]
+[assembly: AssemblyFileVersion("0.15.6.0")]

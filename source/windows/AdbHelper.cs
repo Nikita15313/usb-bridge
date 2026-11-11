@@ -140,6 +140,22 @@ public static class AdbHelper {
   if(result.ExitCode!=0){string stage=args[0]=="devices"?"получить список телефонов":args[0]=="-d"?"выбрать единственный телефон по USB":args.Length>2&&args[2]=="push"?"передать файлы помощника":args.Length>3&&args[3]=="sha256sum"?"проверить файлы помощника":args.Length>3&&args[3]=="sh"?"запустить помощника":args.Length>4?"подготовить системный помощник":"запустить помощника";throw new IOException("ADB не смог "+stage+" (код "+result.ExitCode+"). Проверьте USB-отладку и разрешение на телефоне; системный доступ пока не подтверждён.");}
   return result;
  }
+ internal static HelperProcessResult CheckedCall(string executable,HelperProcessRunner run,HelperSessionAlive alive,int timeout,params string[] args){return Call(executable,run,alive,timeout,args);}
+ internal static HelperProcessRunner ClientRunner(HelperAdbLocation adb,HelperProcessRunner run,HelperAdbPortAvailable available){
+  if(!adb.Bundled)return delegate(string exe,string[] args,int timeout){if(ServerRedirected())throw new IOException("Для сетевого доступа нужен локальный ADB без перенаправления сервера. Настройки существующего ADB не изменены.");return run(exe,args,timeout);};
+  return delegate(string exe,string[] args,int timeout){if(!available())throw new IOException("Запуск помощника остановлен: служебный порт USB Bridge занят другой программой. Другие ADB-подключения не изменены.");string[] prefixed=new string[args.Length+2];prefixed[0]="-P";prefixed[1]=BundledServerPort.ToString(System.Globalization.CultureInfo.InvariantCulture);Array.Copy(args,0,prefixed,2,args.Length);return run(exe,prefixed,timeout);};
+ }
+ internal static bool ServerRedirected(){foreach(string name in new string[]{"ADB_SERVER_SOCKET","ANDROID_ADB_SERVER_ADDRESS","ANDROID_ADB_SERVER_PORT","ADB_SERVER_PORT"})if(!String.IsNullOrEmpty(Environment.GetEnvironmentVariable(name)))return true;return false;}
+ internal static HelperProcessResult RunProcess(string executable,string[] arguments,int timeoutMs){return Run(executable,arguments,timeoutMs);}
+ internal static string TryStartCable(HelperSessionAlive alive,TcpAdbCableTarget target,bool enabled,Action<string> progress){
+  return TryStartCable(LocateAdb(),Run,delegate{return CheckAdbPort(BundledServerPort);},alive,target,enabled,progress);
+ }
+ internal static string TryStartCable(HelperAdbLocation adb,HelperProcessRunner run,HelperAdbPortAvailable available,HelperSessionAlive alive,TcpAdbCableTarget target,bool enabled,Action<string> progress){
+  if(enabled&&!adb.Bundled&&ServerRedirected())return "Для режима рабочего ПК нужен локальный ADB без перенаправления сервера. Настройки существующего ADB не изменены.";
+  string ordinary=TryStart(adb,run,alive,available);
+  if(enabled&&target==null&&ordinary.StartsWith(TcpAdbHelper.MissingUsb,StringComparison.Ordinal))return ordinary+" Подготовка для рабочего ПК действует только через USB-модем; через MIDI этот вариант не работает.";
+  return TcpAdbHelper.ShouldFallback(enabled,target,ordinary)?TcpAdbHelper.TryStart(adb,run,available,alive,target,progress):ordinary;
+ }
  public static string TryStart(HelperSessionAlive alive){return TryStart(LocateAdb(),Run,alive,delegate{return CheckAdbPort(BundledServerPort);});}
  public static string TryStart(HelperAdbLocation adb,HelperProcessRunner run,HelperSessionAlive alive,HelperAdbPortAvailable available){
   if(adb.Executable==null)return adb.Problem;
@@ -173,6 +189,17 @@ public static class AdbHelper {
   // -d is ADB's authoritative USB-only selector. This also rejects a second USB
   // phone and never targets a TCP/wireless connection or an emulator.
   string physical=Call(adb,run,alive,6000,"-d","get-serialno").Output.Trim();if(physical!=serial)throw new IOException("Не удалось однозначно определить телефон по USB. Оставьте подключённым один телефон.");
+  return StartSelected(adb,run,alive,serial,load);
+ }catch(IOException error){return error.Message;}catch(Win32Exception error){
+  if(error.NativeErrorCode==2||error.NativeErrorCode==3)return "Файл ADB больше не найден. Распакуйте весь комплект USB Bridge заново.";
+  if(error.NativeErrorCode==5)return "Windows запретила запуск ADB. Системный доступ не запущен; проверьте ограничения запуска программ на этом ПК.";
+  if(error.NativeErrorCode==126)return "Windows не смогла загрузить библиотеку ADB. Распакуйте весь комплект, включая папку platform-tools.";
+  if(error.NativeErrorCode==193||error.NativeErrorCode==216)return "Эта версия ADB несовместима с Windows на этом ПК. Используйте полный комплект USB Bridge для Windows 7.";
+  return "Windows не смогла запустить ADB (код "+error.NativeErrorCode+"). Системный доступ не подтверждён.";
+ }catch(Exception){return "Не удалось запустить ADB на этом компьютере. Системный доступ не подтверждён. Используйте полный комплект USB Bridge для вашей Windows.";}}
+ internal static string StartSelected(string adb,HelperProcessRunner run,HelperSessionAlive alive,string serial){return StartSelected(adb,run,alive,serial,LoadOverlay);}
+ internal static string StartSelected(string adb,HelperProcessRunner run,HelperSessionAlive alive,string serial,HelperOverlayLoader load){
+  if(!SerialPattern.IsMatch(serial)&&!TcpAdbHelper.IsLoopbackSerial(serial))throw new IOException("Недопустимый служебный адрес телефона.");
   string paths=Call(adb,run,alive,6000,"-s",serial,"shell","pm","path",Package).Output;
   string details=Call(adb,run,alive,6000,"-s",serial,"shell","dumpsys","package",Package).Output;
   string starter=StarterPath(paths,details);
@@ -181,13 +208,7 @@ public static class AdbHelper {
   if(OverlayRequired(manufacturer,optimization))StartOverlay(adb,run,alive,load,serial,paths,details,starter);
   else Call(adb,run,alive,20000,"-s",serial,"shell",starter);
   return "Команда запуска отправлена. Телефон проверяет системный доступ; если появится запрос USB Bridge, разрешите его.";
- }catch(IOException error){return error.Message;}catch(Win32Exception error){
-  if(error.NativeErrorCode==2||error.NativeErrorCode==3)return "Файл ADB больше не найден. Распакуйте весь комплект USB Bridge заново.";
-  if(error.NativeErrorCode==5)return "Windows запретила запуск ADB. Системный доступ не запущен; проверьте ограничения запуска программ на этом ПК.";
-  if(error.NativeErrorCode==126)return "Windows не смогла загрузить библиотеку ADB. Распакуйте весь комплект, включая папку platform-tools.";
-  if(error.NativeErrorCode==193||error.NativeErrorCode==216)return "Эта версия ADB несовместима с Windows на этом ПК. Используйте полный комплект USB Bridge для Windows 7.";
-  return "Windows не смогла запустить ADB (код "+error.NativeErrorCode+"). Системный доступ не подтверждён.";
- }catch(Exception){return "Не удалось запустить ADB на этом компьютере. Системный доступ не подтверждён. Используйте полный комплект USB Bridge для вашей Windows.";}}
+ }
  public static string QuoteArgument(string value){
   StringBuilder result=new StringBuilder("\"");int slashes=0;foreach(char c in value){if(c=='\\'){slashes++;continue;}if(c=='"'){result.Append('\\',slashes*2+1);result.Append(c);}else{result.Append('\\',slashes);result.Append(c);}slashes=0;}result.Append('\\',slashes*2);result.Append('"');return result.ToString();
  }

@@ -11,24 +11,38 @@ def main():
     parser.add_argument('--key', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--sequence', type=int, required=True)
+    parser.add_argument('--tag', help='Release tag containing all assets; defaults to the Windows version tag')
+    parser.add_argument('--windows-version', help='Defaults to --bridge-version for older release scripts')
+    parser.add_argument('--windows-code', type=int, help='Defaults to --sequence')
     parser.add_argument('--bridge-version', required=True)
+    parser.add_argument('--bridge-code', type=int, help='Defaults to --sequence')
+    parser.add_argument('--bridge-tag', help='Existing release containing the Android Bridge APK')
     parser.add_argument('--wire-version', required=True)
     parser.add_argument('--wire-code', type=int, required=True)
+    parser.add_argument('--wire-tag', help='Existing release containing the WireRoute APK')
     parser.add_argument('--aapt', type=Path, required=True)
     parser.add_argument('--apksigner-jar', type=Path, required=True)
     parser.add_argument('--java', type=Path, required=True)
     args = parser.parse_args()
     if args.sequence <= 0 or args.wire_code <= 0:
         parser.error('Version codes must be positive')
+    windows_version = args.windows_version or args.bridge_version
+    windows_code = args.windows_code if args.windows_code is not None else args.sequence
+    bridge_code = args.bridge_code if args.bridge_code is not None else args.sequence
+    tag = args.tag or ('v' + windows_version)
+    bridge_tag = args.bridge_tag or tag
+    wire_tag = args.wire_tag or tag
+    if windows_code <= 0 or bridge_code <= 0 or not all(re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', value) for value in (tag, bridge_tag, wire_tag)):
+        parser.error('Invalid component version or release tag')
     releases = []
-    entries = [('windows', f'USBBridge-Windows-{args.bridge_version}.zip', args.sequence, args.bridge_version, None),
-               ('androidBridge', f'USBBridge-Android-{args.bridge_version}.apk', args.sequence, args.bridge_version, 'local.usbbridge'),
-               ('androidWireRoute', f'WireRoute-Android-{args.wire_version}.apk', args.wire_code, args.wire_version, 'app.wireroute.release263')]
-    for identity, filename, code, version, package in entries:
+    entries = [('windows', f'USBBridge-Windows-{windows_version}.zip', windows_code, windows_version, None, tag),
+               ('androidBridge', f'USBBridge-Android-{args.bridge_version}.apk', bridge_code, args.bridge_version, 'local.usbbridge', bridge_tag),
+               ('androidWireRoute', f'WireRoute-Android-{args.wire_version}.apk', args.wire_code, args.wire_version, 'app.wireroute.release263', wire_tag)]
+    for identity, filename, code, version, package, release_tag in entries:
         path = args.assets / filename
         data = path.read_bytes()
         release = dict(id=identity, versionCode=code, versionName=version,
-                       url=f'https://github.com/Nikita15313/usb-bridge/releases/download/v{args.bridge_version}/{filename}',
+                       url=f'https://github.com/Nikita15313/usb-bridge/releases/download/{release_tag}/{filename}',
                        sha256=hashlib.sha256(data).hexdigest(), size=len(data))
         if package:
             badging = subprocess.check_output([str(args.aapt), 'dump', 'badging', str(path)], text=True, encoding='utf-8')

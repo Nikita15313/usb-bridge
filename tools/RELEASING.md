@@ -7,6 +7,7 @@
 3. Подготовить полную Windows ZIP с `USBBridge.exe` в корне и рядом `USBBridge.exe.config`, `helper`, `platform-tools`, лицензиями. Создать общий kit ZIP с папками Windows и Android.
 4. В каталоге артефактов должны быть `USBBridge-Windows-VERSION.zip`, `USBBridge-Android-VERSION.apk`, `WireRoute-Android-WIREVERSION.apk`.
 5. Запустить `make_update_feed.py --help`. Передать каталог артефактов, локальный закрытый ключ, новый sequence, версии, aapt2, Java и apksigner. Скрипт проверяет package/version/signature APK и подписывает конкретные размеры и SHA-256.
+   Компоненты могут обновляться независимо: `--windows-version/--windows-code`, `--bridge-version/--bridge-code` и `--wire-version/--wire-code`. Для неизменённых APK используйте `--bridge-tag`/`--wire-tag` предыдущего релиза. Глобальный `sequence` увеличивается, коды неизменённых приложений остаются прежними. Не повышайте код старого WireRoute ради обхода установленной более новой сборки.
 6. Проверить, что ключ соответствует `updates/public-key.json`. Закрытый ключ не копировать в Git, релиз или GitHub Secrets.
 7. Создать draft release с тегом `vVERSION`, загрузить проверенные артефакты. Загрузить тестовые копии и сравнить SHA-256; проверить подпись файла обновления тем же кодом, что использует приложение.
 8. Опубликовать release, проверить публичные URL каждого файла. Только после этого обновить `updates/stable.json` в ветке main. Этот порядок исключает предложение ещё недоступной версии.
